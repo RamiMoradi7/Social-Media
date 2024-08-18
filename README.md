@@ -1,6 +1,7 @@
-# Fullstack Application
+# Full Stack Social Media Application "Friendify"
 
-Social Media Platform: Created a Facebook-like application using React, Redux, and Node.js with TypeScript. This project involved implementing real-time notifications and scalable data management with MongoDB.
+A Facebook-like application using React, Redux, and Node.js with TypeScript. This project involved implementing real-time notifications and scalable data management with MongoDB.
+
 ## 🚀 Features
 
  **Social Media Platform**: Developed a comprehensive social media platform simillar to Facebook using React Redux for state management and Node.js with TypeScript for backend services.
@@ -9,7 +10,7 @@ Social Media Platform: Created a Facebook-like application using React, Redux, a
 - **Real-Time Communication**: Integrated WebSocket for real-time communication, enabling instant messaging and updates, alongside a REST API for reliable data access.
 - **Responsive Design**: Focused on delivering high-quality user experiences with a responsive design, ensuring the application is accessible and functional across various devices.
 - **Object-Oriented Programming**: Used Object-Oriented Programming (OOP) principles to create modular, reusable, and maintainable code.
-- **Component Lifecycle Management**: Managed component lifecycles effectively to optimize performance and ensure seamless user interactions.
+- **Component Lifecycle Management**: Managed component lifecycle effectively, ensuring optimized performance and efficient updates throughout the application’s runtime
 
 ## 📂 Project Structure
 
