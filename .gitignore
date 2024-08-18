@@ -1,0 +1,43 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Environment variables
+.env
+.env.*.local
+
+# Build directories
+dist/
+build/
+
+# TypeScript build artifacts
+*.tsbuildinfo
+
+# IDE and Editor files
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+
+# Front-end
+/public/static/
+*.css.map
+*.js.map
+
+# Back-end
+*.log
+
+# Local configuration
+*.local
+*.env.local
+
+# Yarn offline cache
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
