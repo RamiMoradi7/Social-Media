@@ -2,32 +2,48 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Comment } from "../models/Comment";
 import { Post } from "../models/Post";
 import { Reply } from "../models/Reply";
-import { WritableDraft } from "immer";
 
-export type ContextType = "home" | "profile";
+export enum ContextType {
+  Home = "home",
+  Profile = "profile",
+}
 
 export interface PostsState {
-  posts: Post[];
-  userProfilePosts: Post[];
+  posts: Record<string, Post>;
+  userProfilePosts: Record<string, Post>;
   currentUserProfileId: string;
   isLoading: boolean;
   context: ContextType;
 }
 
 const initialState: PostsState = {
-  posts: [],
-  userProfilePosts: [],
+  posts: {},
+  userProfilePosts: {},
   currentUserProfileId: "",
   isLoading: true,
-  context: "home",
+  context: ContextType.Home,
 };
 
-const findArrIndex = <T>(arr: T[], key: keyof T, value: string) =>
-  arr.findIndex((item) => item[key] === value);
+export const getPostsState = (state: PostsState) =>
+  state.context === ContextType.Home ? state.posts : state.userProfilePosts;
 
-const getPostsArray = (state: WritableDraft<PostsState>) => {
-  return state.context === "home" ? state.posts : state.userProfilePosts;
+const getPost = (state: PostsState, postId: string) => {
+  const currentState = getPostsState(state);
+  if (!currentState[postId]) return;
+  return currentState;
 };
+
+const setPosts = (posts: Post[], state: PostsState) => {
+  const current = getPostsState(state);
+  state.isLoading = true;
+  posts.forEach((post) => {
+    if (!current[post._id]) {
+      current[post._id] = post;
+    }
+  });
+  state.isLoading = false;
+};
+
 const postsSlice = createSlice({
   name: "posts",
   initialState,
@@ -41,164 +57,113 @@ const postsSlice = createSlice({
       }>
     ) {
       const { posts, context, currentUserId } = action.payload;
-
-      if (context === "home") {
-        state.context = "home";
-        const existingPostIds = new Set(state.posts.map((post) => post._id));
-        state.posts = [
-          ...state.posts,
-          ...posts.filter((post) => !existingPostIds.has(post._id)),
-        ] as Post[];
-      } else if (context === "profile") {
-        if (currentUserId && currentUserId !== state.currentUserProfileId) {
-          state.userProfilePosts = [];
-          state.currentUserProfileId = currentUserId;
-        }
-        state.context = "profile";
-        const existingPostIds = new Set(
-          state.userProfilePosts.map((post) => post._id)
-        );
-        state.userProfilePosts = [
-          ...state.userProfilePosts,
-          ...posts.filter((post) => !existingPostIds.has(post._id)),
-        ];
+      state.context = context;
+      switch (context) {
+        case ContextType.Home:
+          setPosts(posts, state);
+          break;
+        case ContextType.Profile:
+          if (state.currentUserProfileId !== currentUserId) {
+            state.userProfilePosts = {};
+            state.currentUserProfileId = currentUserId;
+          }
+          setPosts(posts, state);
       }
-
-      state.isLoading = false;
     },
-
     addPost(state, action: PayloadAction<Post>) {
       const post = action.payload;
-      const postsArr = getPostsArray(state);
-      postsArr.unshift(post);
+      const postsState = getPostsState(state);
+      postsState[post._id] = post;
     },
     updatePost(state, action: PayloadAction<Post>) {
       const post = action.payload;
-      const postsArr = getPostsArray(state);
-      const index = findArrIndex(postsArr, "_id", post._id);
-      if (index !== -1) {
-        postsArr[index] = post;
-      }
+      const postsState = getPost(state, post._id);
+      postsState[post._id] = post;
     },
     deletePost(state, action: PayloadAction<string>) {
       const postId = action.payload;
-      const postsArr = getPostsArray(state);
-      const index = findArrIndex(postsArr, "_id", postId);
-      if (index !== -1) {
-        postsArr.splice(index, 1);
-      }
+      const postsState = getPost(state, postId);
+      delete postsState[postId];
     },
-
-    resetPosts(state) {
-      state.posts = [];
-    },
-    setLoading(state, action: PayloadAction<boolean>) {
-      state.isLoading = action.payload;
+    initCommentsForPost(
+      state,
+      action: PayloadAction<{
+        postId: string;
+        comments: Record<string, Comment>;
+      }>
+    ) {
+      const { postId, comments } = action.payload;
+      const postsState = getPost(state, postId);
+      postsState[postId].recordComments = comments;
     },
     addComment(state, action: PayloadAction<Comment>) {
-      const { postId } = action.payload;
-      const postsArr = getPostsArray(state);
-      const postIndex = postsArr.findIndex((post) => post._id === postId);
-      if (postIndex !== -1) {
-        postsArr[postIndex].comments.push(action.payload);
+      const { postId, _id: commentId } = action.payload;
+      const postsState = getPost(state, postId);
+      if (!postsState[postId].recordComments) {
+        postsState[postId].recordComments = {};
       }
+      postsState[postId].recordComments[commentId] = action.payload;
+      postsState[postId].commentsCount += 1;
     },
     updateComment(state, action: PayloadAction<Comment>) {
-      const updatedComment = action.payload;
-      const postsArr = getPostsArray(state);
-      const postIndex = findArrIndex(postsArr, "_id", updatedComment.postId);
-
-      if (postIndex !== -1) {
-        const commentIndex = findArrIndex(
-          postsArr[postIndex].comments,
-          "_id",
-          updatedComment._id
-        );
-
-        if (commentIndex !== -1) {
-          postsArr[postIndex].comments[commentIndex] = updatedComment;
-        }
-      }
+      const { postId, _id: commentId } = action.payload;
+      const postsState = getPost(state, postId);
+      postsState[postId].recordComments[commentId] = action.payload;
     },
     deleteComment(state, action: PayloadAction<Comment>) {
-      const { _id, postId } = action.payload;
-      const postsArr = getPostsArray(state);
-      const postIndex = findArrIndex(postsArr, "_id", postId);
-
-      if (postIndex !== -1) {
-        const comments = postsArr[postIndex].comments;
-        const commentIndex = findArrIndex(comments, "_id", _id);
-        if (commentIndex !== -1) {
-          postsArr[postIndex].comments.splice(commentIndex, 1);
-        }
+      const { _id: commentId, postId } = action.payload;
+      const postsState = getPost(state, postId);
+      if (postsState[postId].recordComments[commentId]) {
+        delete postsState[postId].recordComments[commentId];
       }
+    },
+    initRepliesForComment(
+      state,
+      action: PayloadAction<{
+        postId: string;
+        commentId: string;
+        replies: Record<string, Reply>;
+      }>
+    ) {
+      const { postId, commentId, replies } = action.payload;
+      const postsState = getPost(state, postId);
+
+      if (!postsState[postId].recordComments[commentId]) return;
+      postsState[postId].recordComments[commentId].recordReplies = replies;
     },
     addReply(state, action: PayloadAction<Reply>) {
-      const postsArr = getPostsArray(state);
-      const postIndex = postsArr.findIndex((post) =>
-        post.comments.some(
-          (comment) => comment._id === action.payload.commentId
-        )
-      );
-      if (postIndex !== -1) {
-        const commentIndex = postsArr[postIndex].comments.findIndex(
-          (comment) => comment._id === action.payload.commentId
-        );
-        if (commentIndex !== -1) {
-          postsArr[postIndex].comments[commentIndex].replies.push(
-            action.payload
-          );
-        }
+      const { commentId, postId, _id: replyId } = action.payload;
+      const postsState = getPost(state, postId);
+      if (!postsState[postId].recordComments[commentId].recordReplies) {
+        postsState[postId].recordComments[commentId].recordReplies = {};
       }
+      postsState[postId].recordComments[commentId].recordReplies[replyId] =
+        action.payload;
     },
     updateReply(state, action: PayloadAction<Reply>) {
-      const updatedReply = action.payload;
-      const postsArr = getPostsArray(state);
+      const { postId, commentId, _id: replyId } = action.payload;
+      const postsState = getPost(state, postId);
 
-      const post = postsArr.find((post) =>
-        post.comments.some((comment) =>
-          comment.replies.some((reply) => reply._id === updatedReply._id)
-        )
-      );
-
-      if (post) {
-        const comment = post.comments.find((comment) =>
-          comment.replies.some((reply) => reply._id === updatedReply._id)
-        );
-
-        if (comment) {
-          const replyIndex = comment.replies.findIndex(
-            (reply) => reply._id === updatedReply._id
-          );
-
-          if (replyIndex !== -1) {
-            comment.replies[replyIndex] = updatedReply;
-          }
-        }
+      if (postsState[postId].recordComments[commentId].recordReplies[replyId]) {
+        postsState[postId].recordComments[commentId].recordReplies[replyId] =
+          action.payload;
       }
     },
     deleteReply(state, action: PayloadAction<Reply>) {
-      const { _id, commentId } = action.payload;
-      const postsArr = getPostsArray(state);
-      const postIndex = postsArr.findIndex((post) =>
-        post.comments.some((comment) => comment._id === commentId)
-      );
+      const { _id: replyId, commentId, postId } = action.payload;
+      const postsState = getPost(state, postId);
 
-      if (postIndex !== -1) {
-        const comments = postsArr[postIndex].comments;
-        const commentIndex = findArrIndex(comments, "_id", commentId);
-
-        if (commentIndex !== -1) {
-          const currentCommentReplies =
-            postsArr[postIndex].comments[commentIndex].replies;
-
-          const replyIndex = findArrIndex(currentCommentReplies, "_id", _id);
-
-          if (replyIndex !== -1) {
-            currentCommentReplies.splice(replyIndex, 1);
-          }
-        }
+      if (postsState[postId].recordComments[commentId].recordReplies[replyId]) {
+        delete postsState[postId].recordComments[commentId].recordReplies[
+          replyId
+        ];
       }
+    },
+    resetPosts(state) {
+      state.posts = {};
+    },
+    setLoading(state, action: PayloadAction<boolean>) {
+      state.isLoading = action.payload;
     },
   },
 });
@@ -208,10 +173,12 @@ export const {
   addPost,
   updatePost,
   deletePost,
+  initCommentsForPost,
   setLoading,
   addComment,
   updateComment,
   deleteComment,
+  initRepliesForComment,
   addReply,
   updateReply,
   deleteReply,

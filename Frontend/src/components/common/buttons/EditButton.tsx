@@ -6,11 +6,10 @@ export default function EditButton({ onClick }: EditButtonProps): JSX.Element {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-2 cursor-pointer text-zinc-900 font-semibold tracking-widest rounded-md shadow-lg hover:bg-blue-300 transition-all duration-300 transform hover:scale-105"
+      className="bg-blue-500 hover:bg-blue-700 text-white font-semibold py-1 px-2 rounded-full shadow-lg transform transition duration-300 ease-in-out hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-500 focus:ring-opacity-50"
     >
-      <span>Edit</span>
       <svg
-        className="h-6 w-6"
+        className="h-8 w-8 text-white"
         width="24"
         height="24"
         viewBox="0 0 24 24"

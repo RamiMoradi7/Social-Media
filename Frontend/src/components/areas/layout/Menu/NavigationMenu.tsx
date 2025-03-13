@@ -7,7 +7,7 @@ interface NavigationMenuProps {
   toggleOpen: (section: string) => void;
 }
 
-type MenuItem = {
+type MenuItemType = {
   icon: string;
   current: string;
   count?: number;
@@ -25,7 +25,7 @@ export default function NavigationMenu({
     (notification) => notification.type === "message" && !notification.isRead
   );
 
-  const menuItems: MenuItem[] = [
+  const menuItems: MenuItemType[] = [
     {
       icon: "bx bxs-home",
       current: "home",
@@ -38,8 +38,8 @@ export default function NavigationMenu({
     },
     {
       icon: "bx bx-group",
-      current: "friends",
-      link: "/friends",
+      current: "suggestions",
+      link: "/suggestions",
     },
     {
       icon: "bx bxs-bell",
@@ -62,8 +62,11 @@ export default function NavigationMenu({
         />
       ))}
       <div className="lg:hidden block p-4">
-        <button className="text-3xl" onClick={() => toggleOpen("menu")}>
-          <i className="bx bx-menu"></i>
+        <button
+          className="text-3xl"
+          onClick={() => toggleOpen("menu")}
+        >
+          <i className="bx bx-menu dark:text-dark-txt"></i>
         </button>
       </div>
     </ul>

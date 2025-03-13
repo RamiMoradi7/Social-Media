@@ -1,8 +1,8 @@
-import { useCurrentUser } from "../../../context/UserContext";
+import toast from "react-hot-toast";
 import { isChatOpen } from "../../../redux/ChatsSlice";
 import { store } from "../../../redux/Store";
 import { chatsService } from "../../../services/ChatsService";
-import { notify } from "../../../utilities/Notify";
+import { useCurrentUser } from "../../../redux/Selectors";
 
 type NewChatProps = {
     handleBackToChatList: () => void;
@@ -11,7 +11,7 @@ type NewChatProps = {
 export default function NewChat({
     handleBackToChatList,
 }: NewChatProps): JSX.Element {
-    const { user } = useCurrentUser();
+    const user = useCurrentUser();
     const { friends, _id: currentUserId } = user;
     const handleNewChat = async (participantId: string) => {
         try {
@@ -23,7 +23,7 @@ export default function NewChat({
             }
             handleBackToChatList();
         } catch (err: any) {
-            notify.error(err);
+            toast.error(err);
         }
     };
 

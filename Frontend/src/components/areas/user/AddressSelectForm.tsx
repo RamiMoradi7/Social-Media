@@ -1,8 +1,8 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { useFetch } from "../../../hooks/useFetch";
 import { addressService } from "../../../services/AddressService";
 import { City, Country, State } from "../../../types/AddressTypes";
-import { notify } from "../../../utilities/Notify";
 import AddressSelect from "../../common/inputs/AddressSelect";
 
 type AddressSelectProps = {
@@ -27,7 +27,7 @@ export default function AddressSelectForm({
             );
             setStates(statesByCountry);
         } catch (err: any) {
-            notify.error(err);
+            toast.error(err);
         }
     };
     const handleStateChange = async (stateName: string) => {
@@ -41,7 +41,7 @@ export default function AddressSelectForm({
                 setCities(citiesByState);
             }
         } catch (err: any) {
-            notify.error(err);
+            toast.error(err);
         }
     };
 

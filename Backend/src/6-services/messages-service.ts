@@ -1,4 +1,5 @@
 import { UploadedFile } from "express-fileupload";
+import mongoose from "mongoose";
 import { fileSaver } from "uploaded-file-saver";
 import { imageHandlers } from "../2-utils/image-handlers";
 import { Chat, IChat } from "../4-models/chat";
@@ -7,11 +8,10 @@ import {
   ValidationError,
 } from "../4-models/client-errors";
 import { IMessage, Message } from "../4-models/message";
-import { notificationsService } from "./notifications-service";
-import mongoose, { mongo, Types } from "mongoose";
 import { NotificationTypes } from "../4-models/notification";
-import { socketService } from "./socket-service";
 import { chatsService } from "./chats-service";
+import { notificationsService } from "./notifications-service";
+import { socketService } from "./socket-service";
 
 type MessageProps = {
   message: IMessage;
@@ -42,7 +42,8 @@ class MessagesService {
       }
 
       if (image) {
-        const imageName = await this.handleImageUpload(image);
+        const webpImage = await imageHandlers.convertImageToWebP(image);
+        const imageName = await this.handleImageUpload(webpImage);
         message.imageName = imageName;
       }
       message.createdAt = new Date();
@@ -126,7 +127,8 @@ class MessagesService {
     if (image) {
       imageHandlers.configureFileSaver("1-assets", "messages-images");
       const oldImageName = await this.getImageName(message._id.toString());
-      const newImageName = await fileSaver.update(oldImageName, image);
+      const webpImage = await imageHandlers.convertImageToWebP(image);
+      const newImageName = await fileSaver.update(oldImageName, webpImage);
       message.imageName = newImageName;
     }
     message = await Message.findByIdAndUpdate(message._id, message, {

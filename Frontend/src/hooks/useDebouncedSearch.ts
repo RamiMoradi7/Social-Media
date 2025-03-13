@@ -1,11 +1,11 @@
 import _ from "lodash";
 import { ChangeEvent, useState } from "react";
-import { useCurrentUser } from "../context/UserContext";
 import { User } from "../models/User";
 import { usersService } from "../services/UsersService";
+import { useCurrentUser } from "../redux/Selectors";
 
 export const useDebouncedSearch = () => {
-  const { user } = useCurrentUser();
+  const user = useCurrentUser();
   const [searchValue, setSearchValue] = useState<string>("");
 
   const [searchResults, setSearchResults] = useState<Partial<User>[]>([]);

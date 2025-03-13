@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import { useCurrentUser } from "../../../../context/UserContext";
+import toast from "react-hot-toast";
 import { useLocalStorage } from "../../../../hooks/useLocalStorage";
+import { useCurrentUser } from "../../../../redux/Selectors";
 import { usersService } from "../../../../services/UsersService";
-import { notify } from "../../../../utilities/Notify";
 
 interface DarkModeToggleProps {
   className?: string;
@@ -11,9 +11,7 @@ interface DarkModeToggleProps {
 export default function DarkModeToggle({
   className,
 }: DarkModeToggleProps): JSX.Element {
-  const {
-    user: { theme: userDefaultTheme, _id: userId },
-  } = useCurrentUser();
+  const { theme: userDefaultTheme, _id: userId } = useCurrentUser();
 
   const [theme, setTheme] = useLocalStorage<string>("theme", userDefaultTheme);
 
@@ -26,7 +24,7 @@ export default function DarkModeToggle({
         userFields: { theme: newTheme },
       });
     } catch (err: any) {
-      notify.error(err);
+      toast.error(err);
     }
   };
   useEffect(() => {
@@ -39,7 +37,11 @@ export default function DarkModeToggle({
       id="dark-mode-toggle-mb"
       onClick={handleToggle}
     >
-      <i className="bx bxs-moon"></i>
+      <i
+        className={`bx ${
+          theme === "dark" ? "bxs-sun" : "bxs-moon"
+        } transition-transform duration-300`}
+      ></i>
     </div>
   );
 }

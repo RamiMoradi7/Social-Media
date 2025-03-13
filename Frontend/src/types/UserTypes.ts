@@ -1,3 +1,5 @@
+import { User } from "../models/User";
+
 export type userAddress = {
   city: string;
   state: string;
@@ -14,3 +16,15 @@ export type MediaItem = {
   createdAt: Date;
   postId?: string;
 };
+
+export type FriendshipData = {
+  receiverUser: Partial<User>;
+  senderUser: Partial<User>;
+  status: string;
+};
+
+export type FriendActionTypes =
+  | "friendRequest"
+  | "acceptRequest"
+  | "ignoreRequest"
+  | "deleteFriendship";

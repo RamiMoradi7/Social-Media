@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import { appConfig } from "./app-config";
 
-// DAL = Data Access Layer - The only one accessing the database.
 class DAL {
   public async connect() {
     try {

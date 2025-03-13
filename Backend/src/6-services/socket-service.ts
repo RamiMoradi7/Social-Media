@@ -1,14 +1,18 @@
 import { UploadedFile } from "express-fileupload";
 import { Server as httpServer } from "http";
+import mongoose from "mongoose";
 import { Socket, Server as SocketServer } from "socket.io";
+import { Chat, IChat } from "../4-models/chat";
 import { IComment } from "../4-models/comment";
 import { IMessage, Message } from "../4-models/message";
 import { INotification, Notification } from "../4-models/notification";
+import { IUser } from "../4-models/user";
+import { chatsService } from "./chats-service";
 import { commentsService } from "./comments-service";
 import { messagesService } from "./messages-service";
 import { notificationsService } from "./notifications-service";
-import { Chat, IChat } from "../4-models/chat";
-import { chatsService } from "./chats-service";
+import { userRequestsService } from "./user-requests-service";
+import { FriendShipActions } from "../4-models/enums";
 
 class SocketService {
   private socketServer: SocketServer | null = null;
@@ -42,6 +46,53 @@ class SocketService {
         const addedChat = await chatsService.startChat(newChat);
         this.socketServer.sockets.emit("startChat", addedChat);
       });
+
+      socket.on(
+        "friendAction",
+        async (
+          action: FriendShipActions,
+          senderUserId: mongoose.Types.ObjectId & string,
+          receiverUserId: mongoose.Types.ObjectId & string
+        ) => {
+          let senderUser: Partial<IUser>, receiverUser: Partial<IUser>;
+          switch (action) {
+            case FriendShipActions.FRIEND_REQUEST:
+              ({ senderUser, receiverUser } =
+                await userRequestsService.toggleFriendRequest(
+                  senderUserId,
+                  receiverUserId
+                ));
+              break;
+            case FriendShipActions.ACCEPT_REQUEST:
+              ({ senderUser, receiverUser } =
+                await userRequestsService.acceptFriendRequest(
+                  senderUserId,
+                  receiverUserId
+                ));
+              break;
+            case FriendShipActions.IGNORE_REQUEST:
+              ({ senderUser, receiverUser } =
+                await userRequestsService.deleteFriendRequest(
+                  senderUserId,
+                  receiverUserId
+                ));
+              break;
+            case FriendShipActions.DELETE_FRIENDSHIP:
+              ({ senderUser, receiverUser } =
+                await userRequestsService.deleteFriendship(
+                  senderUserId,
+                  receiverUserId
+                ));
+              break;
+          }
+          this.socketServer.emit("friendAction", {
+            action,
+            senderUser,
+            receiverUser,
+            status: "success",
+          });
+        }
+      );
 
       socket.on("addNotification", async (notification: INotification) => {
         console.log("Client sent notification.");

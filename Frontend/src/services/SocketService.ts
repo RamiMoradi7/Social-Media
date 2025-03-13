@@ -1,21 +1,34 @@
 import { Socket, io } from "socket.io-client";
+import { Chat } from "../models/Chat";
 import { Comment } from "../models/Comment";
 import { Message } from "../models/Message";
 import { Notification } from "../models/Notification";
+import { User } from "../models/User";
 import { appConfig } from "../utilities/AppConfig";
-import { Chat } from "../models/Chat";
+import { FriendActionTypes, FriendshipData } from "../types/UserTypes";
 
 class SocketService {
   private socket: Socket;
-
   public connect(
     handleMessage: (msg: Message) => void,
     handleAddComment: (comment: Comment) => void,
     handleNotification: (notification: Notification) => void,
     handleRemoveNotification: (notificationId: string) => void,
-    handleStartChat: (chat: Chat) => void
+    handleStartChat: (chat: Chat) => void,
+    handleFriendRequestAction: (
+      action: FriendActionTypes,
+      friendshipData: FriendshipData
+    ) => void
   ): void {
-    this.socket = io(appConfig.socketUrl);
+    this.socket = io(appConfig.socketUrl, {
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      transports: ["websocket"],
+    });
+
+    this.socket.on("connect", () => {
+      console.log(`Connected to WebSocket server.`);
+    });
 
     this.socket.on("startChat", (chat: Chat) => {
       handleStartChat(chat);
@@ -25,6 +38,22 @@ class SocketService {
       handleAddComment(comment);
     });
 
+    this.socket.on(
+      "friendAction",
+      async ({
+        action,
+        senderUser,
+        receiverUser,
+        status,
+      }: {
+        action: FriendActionTypes;
+        senderUser: Partial<User>;
+        receiverUser: Partial<User>;
+        status: string;
+      }) => {
+        handleFriendRequestAction(action, { senderUser, receiverUser, status });
+      }
+    );
     this.socket.on("sendMessage", (msg: Message) => {
       handleMessage(msg);
     });
@@ -34,6 +63,22 @@ class SocketService {
     this.socket.on("notificationRemoved", (notificationId: string) => {
       handleRemoveNotification(notificationId);
     });
+
+    this.socket.on("error", (error) => {
+      console.error("Socket connection error:", error);
+    });
+
+    this.socket.on("disconnect", () => {
+      console.log("Disconnected from WebSocket server");
+    });
+  }
+
+  public sendFriendAction(
+    action: FriendActionTypes,
+    senderUserId: string,
+    receiverUserId: string
+  ) {
+    this.socket.emit("friendAction", action, senderUserId, receiverUserId);
   }
 
   public sendMessage(messageData: Partial<Message>): void {

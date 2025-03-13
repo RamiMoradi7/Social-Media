@@ -1,10 +1,12 @@
 import { MediaItem, PrivacyOptions, userAddress } from "../types/UserTypes";
+import { Comment } from "./Comment";
 import { Post } from "./Post";
 
 export type Album = {
   title: string;
   mediaItems: MediaItem[];
   createdAt: Date;
+  referenceId: string;
 };
 
 export class User {
@@ -27,13 +29,11 @@ export class User {
   };
   notificationsEnabled: boolean;
   albums: Album[];
-  friends?: Partial<User>[];
+  friends?: User[];
   friendRequests?: User[];
-  sentRequests?: Partial<User>[];
+  sentRequests?: User[];
   isActive?: boolean;
-  posts?: Post[];
   comments?: Comment[];
-  likedPosts?: string[];
   lastLogin?: Date;
   interests?: string[];
   languages?: string[];

@@ -1,17 +1,16 @@
 import { NavLink } from "react-router-dom";
 import { User } from "../../../models/User";
 import FriendshipActionButton from "./buttons/FriendshipActionButton";
+import defaultProfilePic from "../../../assets/images/default-profile-pic.jpg";
 
 type FriendRequestsProps = {
   friendRequests: User[];
   receiverUserId: string;
-  setUser?: (value: React.SetStateAction<User>) => void;
 };
 
 export default function FriendRequests({
   friendRequests,
   receiverUserId,
-  setUser,
 }: FriendRequestsProps): JSX.Element {
   return (
     <div className="flex items-center justify-center dark:bg-dark-third mt-3">
@@ -30,8 +29,8 @@ export default function FriendRequests({
               <NavLink to={`/user-profile/${friendRequest?._id}`}>
                 <img
                   className="w-12 h-12  rounded-full border dark:bg-dark-second shadow-sm"
-                  src={friendRequest?.photos?.profilePhoto}
-                  alt="user image"
+                  src={friendRequest?.photos?.profilePhoto || defaultProfilePic}
+                  alt=""
                 />
               </NavLink>
             </div>
@@ -47,7 +46,6 @@ export default function FriendRequests({
               <FriendshipActionButton
                 receiverUserId={receiverUserId}
                 senderUserId={friendRequest._id}
-                setUser={setUser}
               />
             </div>
           </div>

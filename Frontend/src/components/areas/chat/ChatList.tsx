@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { useCurrentUser } from "../../../context/UserContext";
 import { AppState } from "../../../redux/AppState";
 import ChatListItem from "./ChatListItem";
 import NewChat from "./NewChat";
+import { useCurrentUser } from "../../../redux/Selectors";
 
 export default function ChatList(): JSX.Element {
-    const { user } = useCurrentUser();
+    const user = useCurrentUser();
     const { chats } = useSelector((appState: AppState) => appState?.chatState);
     const { firstName, lastName, photos, email, address } = user;
     const [view, setView] = useState("chatList");
@@ -27,7 +27,7 @@ export default function ChatList(): JSX.Element {
         );
 
     return (
-        <div className="fixed dark:bg-dark-second top-40 lg:top-14 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl rounded-lg shadow-xl z-50 overflow-hidden transition-all duration-300 ease-in-out">
+        <div className="fixed dark:bg-dark-second top-40 lg:top-14 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl rounded-lg shadow-xl z-40 overflow-hidden transition-all duration-300 ease-in-out">
             <section className="flex justify-center antialiased bg-transparent text-gray-600 p-4">
                 <div className="max-w-[340px] dark:bg-dark-second mx-auto bg-white shadow-lg rounded-lg overflow-y-auto max-h-[500px]">
                     <header className="pt-6 pb-4 px-5 border-b border-gray-200">

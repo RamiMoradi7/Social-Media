@@ -5,6 +5,7 @@ export class Reply {
   author: User;
   text: string;
   commentId: string;
+  postId: string;
   createdAt: Date;
   likes: User[];
   isLiked: boolean;

@@ -1,10 +1,29 @@
 import axios from "axios";
 import { Comment } from "../models/Comment";
-import { addComment, deleteComment } from "../redux/PostsSlice";
+import {
+  addComment,
+  deleteComment,
+  initCommentsForPost,
+} from "../redux/PostsSlice";
 import { store } from "../redux/Store";
 import { appConfig } from "../utilities/AppConfig";
 
 class CommentsService {
+  public async getCommentsByPost(
+    postId: string,
+    userId: string
+  ): Promise<void> {
+    const response = await axios.get<Comment[]>(
+      appConfig.commentsUrl + `postId/${postId}/userId/${userId}`
+    );
+    const comments = response.data;
+    const commentsRecord = comments.reduce((acc, comment) => {
+      acc[comment._id] = comment;
+      return acc;
+    }, {} as Record<string, Comment>);
+    store.dispatch(initCommentsForPost({ postId, comments: commentsRecord }));
+  }
+
   public async addComment(
     comment: Comment,
     postId: string,

@@ -1,9 +1,9 @@
 import { FormProvider, useForm } from "react-hook-form";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import registerBackground from "../../assets/images/register-wallpaper.jpg";
 import { User } from "../../models/User";
 import { authService } from "../../services/AuthService";
-import { notify } from "../../utilities/Notify";
 import { DateInput } from "../common/inputs/DatePicker";
 import SelectInput from "../common/inputs/SelectInput";
 import StringInput from "../common/inputs/StringInput";
@@ -17,10 +17,10 @@ export default function Register(): JSX.Element {
     try {
       console.log(user);
       await authService.register(user);
-      notify.success(`Welcome ${user.firstName}`);
+      toast.success(`Welcome ${user.firstName}`);
       navigate("/");
     } catch (err: any) {
-      notify.error(err);
+      toast.error(err);
     }
   };
   return (

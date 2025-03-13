@@ -1,67 +1,66 @@
-import { useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import { useCurrentUser } from "../../context/UserContext";
+import { Status } from "../../hooks/useSearchResults";
 import { useTitle } from "../../hooks/useTitle";
-import { AppState } from "../../redux/AppState";
-import { initPosts } from "../../redux/PostsSlice";
+import { ContextType, initPosts } from "../../redux/PostsSlice";
 import { postsService } from "../../services/PostsService";
 import { PostCard } from "../areas/home/Post/Post";
 import Loader from "../common/loader/Loader";
+import { useCurrentUser, usePostSelector } from "../../redux/Selectors";
 
 export default function PostDetails(): JSX.Element {
-  useTitle("Friendify");
-  const { postId } = useParams<{ postId: string }>();
-  const {
-    user: { _id: userId },
-  } = useCurrentUser();
+    const { postId } = useParams<{ postId: string }>();
+    const post = usePostSelector(postId)
+    const [status, setStatus] = useState<Status>("idle")
+    useTitle(`${post ? post.author.firstName + "'s Post" : "Friendify"}`);
+    const user = useCurrentUser();
+    const { _id: userId } = user
 
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
 
-  const { posts, isLoading } = useSelector(
-    (appState: AppState) => appState.postsState
-  );
-  const storedPost = posts.find((post) => post._id === postId);
 
-  const fetchPost = async () => {
-    if (!postId || !userId) return;
+    const fetchPost = async () => {
+        if (!postId || !userId) return;
 
-    try {
-      const post = await postsService.getPostByUser(postId, userId);
-      dispatch(initPosts({ posts: [post], context: "home" }));
-    } catch (err: any) {
-      console.error("Failed to fetch post:", err.message);
-    }
-  };
+        try {
+            setStatus("loading")
+            await new Promise((resolve) => setTimeout(resolve, 700));
+            const post = await postsService.getPostByUser(postId, userId);
+            dispatch(initPosts({ posts: [post], context: ContextType.Home }));
+            setStatus("success")
+        } catch (err: any) {
+            console.error("Failed to fetch post:", err.message);
+            setStatus("error")
+        }
+    };
 
-  useEffect(() => {
-    if (!storedPost && postId) {
-      fetchPost();
-    }
-  }, [storedPost, postId, userId, dispatch]);
+    useEffect(() => {
+        if (!post && postId) {
+            fetchPost();
+        }
+    }, [post, postId, userId]);
 
-  if (isLoading) {
-    return <Loader />;
-  }
-
-  return (
-    <div className="max-w-[1200px] mt-10 bg-white dark:bg-dark-second dark:text-dark-txt mx-auto flex flex-col border-l border-r">
-      <div className="flex justify-end mb-4">
-        <button
-          className="bg-blue-500 mt-4 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-md shadow-md transition duration-300 text-sm"
-          onClick={() => navigate(-1)}
-        >
-          Return
-        </button>
-      </div>
-      {storedPost ? (
-        <PostCard post={storedPost} />
-      ) : (
-        <p className="text-lg text-center h-screen">
-          Sorry, the post you're looking for has been deleted or does not exist.
+    if (status === "loading") return <Loader />;
+    if (status === "error") {
+        return <p className="text-lg text-center h-screen">
+            Sorry, the post you're looking for has been deleted or does not exist.
         </p>
-      )}
-    </div>
-  );
+    }
+
+
+    return (
+        <div className="max-w-[1200px] mt-10 bg-white dark:bg-dark-second dark:text-dark-txt mx-auto flex flex-col border-l border-r">
+            <div className="flex justify-end mb-4">
+                <button
+                    className="bg-blue-500 mt-4 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-md shadow-md transition duration-300 text-sm"
+                    onClick={() => navigate(-1)}
+                >
+                    Return
+                </button>
+            </div>
+            {post && (<PostCard post={post} />)}
+        </div>
+    );
 }

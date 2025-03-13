@@ -3,44 +3,46 @@ import { User } from "../../../../models/User";
 import { extractMutualFriends } from "../../../../utilities/user-utils/userUtils";
 
 type ProfileInfoProps = {
-  currentUser: User;
-  profileUser: User;
-  isCurrentUser: boolean;
+    currentUser: User;
+    profileUser: User;
+    isCurrentUser: boolean;
 };
 
 export default function ProfileInfo({
-  currentUser,
-  profileUser,
-  isCurrentUser,
+    currentUser,
+    profileUser,
+    isCurrentUser,
 }: ProfileInfoProps): JSX.Element {
-  const mutualFriends = extractMutualFriends(
-    currentUser?.friends,
-    profileUser?.friends
-  );
+    const mutualFriends = extractMutualFriends(
+        currentUser?.friends,
+        profileUser?.friends
+    );
 
-  return (
-    <>
-      <h1 className="text-black dark:text-dark-txt  font-thin mt-2 lg:text-4xl md:text-3xl sm:text-3xl mr-12">
-        {profileUser?.firstName} {profileUser?.lastName}
-      </h1>
-      <div className="flex items-center mt-4">
-        {!isCurrentUser && mutualFriends?.length && (
-          <>
-            <p className="text-black dark:text-dark-txt font-medium">Mutuals: </p>
-            {mutualFriends?.length > 0 &&
-              mutualFriends.map((friend) => (
-                <NavLink key={friend._id} to={`/user-profile/${friend._id}`}>
-                  <img
-                    key={friend._id}
-                    className="w-10 h-10 object-cover border-2 ml-2 border-white rounded-full shadow-md cursor-pointer"
-                    src={friend?.photos?.profilePhoto}
-                    alt="Mutual Friend"
-                  />
-                </NavLink>
-              ))}
-          </>
-        )}
-      </div>
-    </>
-  );
+    return (
+        <>
+            <h1 className="text-black dark:text-dark-txt  mt-2 text-3xl lg:text-5xl md:text-4xl mr-12 leading-tight">
+                {profileUser?.firstName} {profileUser?.lastName}
+            </h1>
+            <div className="flex items-center mt-4 gap-4">
+                {!isCurrentUser && mutualFriends?.length > 0 && (
+                    <div className="flex items-center space-x-3">
+                        <p className="text-black dark:text-dark-txt font-medium text-lg">
+                            Mutual Friends:
+                        </p>
+                        <div className="flex space-x-3">
+                            {mutualFriends.map((friend) => (
+                                <NavLink key={friend._id} to={`/user-profile/${friend._id}`}>
+                                    <img
+                                        className="w-12 h-12 object-cover border-2 ml-2 border-white rounded-full shadow-md transition-transform duration-200 ease-in-out transform hover:scale-110"
+                                        src={friend?.photos?.profilePhoto}
+                                        alt="Mutual Friend"
+                                    />
+                                </NavLink>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </>
+    );
 }

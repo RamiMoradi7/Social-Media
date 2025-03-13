@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema, model } from "mongoose";
 import { IMessage } from "./message";
+
 type Delete = {
   userId: mongoose.Types.ObjectId;
   deletedAt: Date;

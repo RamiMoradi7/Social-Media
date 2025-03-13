@@ -12,6 +12,9 @@ module.exports = {
         78: "19rem",
         22: "4.8rem",
       },
+      animation: {
+        "fade-in": "fadeIn 1s ease-out",
+      },
       rotate: {
         80: "80deg",
       },

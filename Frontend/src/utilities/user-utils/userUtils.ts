@@ -4,6 +4,7 @@ export const isFriendWith = (
   currentUser: User | null,
   userProfileId: string
 ) => {
+  if (!currentUser || !currentUser.friends) return false;
   return !!currentUser.friends?.find((friend) => friend._id === userProfileId);
 };
 

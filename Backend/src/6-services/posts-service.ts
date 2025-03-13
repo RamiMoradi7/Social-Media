@@ -1,22 +1,25 @@
 import { UploadedFile } from "express-fileupload";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { fileSaver } from "uploaded-file-saver";
 import { imageHandlers } from "../2-utils/image-handlers";
-import { getPostsWithLikes, postPopulateFields } from "../2-utils/posts-utils";
-import { updateUserAlbum } from "../2-utils/user-utils";
+import { populateOptions } from "../2-utils/populate-fields";
+import { Album } from "../4-models/album";
 import {
   ResourceNotFoundError,
   ValidationError,
 } from "../4-models/client-errors";
 import { Comment } from "../4-models/comment";
+import { MediaTypes, PrivacyOptions } from "../4-models/enums";
 import { Like } from "../4-models/like";
 import { IPost, MediaItem, Post } from "../4-models/post";
 import { User } from "../4-models/user";
+import { albumsService } from "./albums-service";
 import { usersService } from "./users-service";
 
 type PostProps = {
   post: IPost;
   images?: UploadedFile[];
+  targetUserId?: mongoose.Types.ObjectId;
 };
 
 type GetPostsProps = {
@@ -38,12 +41,12 @@ class PostsService {
     query,
     page,
   }: GetPostsProps): Promise<PostsResponse> {
-    const user = await User.findById({ _id: userId }).exec();
+    const user = await User.findById({ _id: userId }).select("friends").exec();
     if (!user) throw new ResourceNotFoundError(userId.toString());
 
     const baseQuery = {
       $or: [{ author: userId }, { author: { $in: user.friends } }],
-      privacy: { $in: ["Public", "Friends"] },
+      privacy: { $in: [PrivacyOptions.Public, PrivacyOptions.Friends] },
     };
 
     if (query) {
@@ -51,10 +54,9 @@ class PostsService {
     }
 
     const { posts, totalPages, totalPosts, currentPage } =
-      await this.paginatePosts(baseQuery, page);
-
-    const postsWithLikes = getPostsWithLikes(userId, posts);
-    return { posts: postsWithLikes, totalPosts, totalPages, currentPage };
+      await this.paginatePosts(baseQuery, page, userId);
+    console.log(posts);
+    return { posts, totalPosts, totalPages, currentPage };
   }
 
   public async getUserProfilePosts({
@@ -62,51 +64,71 @@ class PostsService {
     currentUserId,
     page,
   }: GetPostsProps): Promise<PostsResponse> {
-    const userProfile = await usersService.getUser(userId);
-    const userPosts = await Post.find({ author: userId })
-      .populate(postPopulateFields)
+    const userPosts = await Post.find({
+      $or: [{ author: userId }, { targetUser: userId }],
+    })
+      .populate(populateOptions)
       .exec();
-
-    const posts = await this.paginatePosts(
-      {
-        _id: { $in: userPosts },
-      },
-      page
-    );
 
     const isOwnProfile = userId.equals(currentUserId);
     if (isOwnProfile) {
-      const postsWithLikes = getPostsWithLikes(userId, posts.posts);
-      return { ...posts, posts: postsWithLikes };
+      const posts = await this.paginatePosts(
+        {
+          _id: { $in: userPosts },
+        },
+        page,
+        currentUserId
+      );
+      return posts;
     } else {
-      const isFriends = userProfile.friends.some((friendId) =>
-        friendId.equals(new mongoose.Types.ObjectId(currentUserId))
+      const userProfile = await usersService.getUser(userId, ["friends"]);
+      const isFriend = userProfile.friends.some(
+        (friend) => friend._id.toString() === currentUserId.toString()
       );
 
-      let postsWithLikes = getPostsWithLikes(currentUserId, posts.posts);
-      postsWithLikes = postsWithLikes.filter((post) => {
-        if (post.privacy === "Public") return true;
-        if (post.privacy === "Friends") return isFriends;
-        return false;
-      });
-
-      return { ...posts, posts: postsWithLikes };
+      const posts = await this.paginatePosts(
+        {
+          _id: { $in: userPosts },
+          privacy: {
+            $nin: isFriend
+              ? [PrivacyOptions.Private]
+              : [PrivacyOptions.Private, PrivacyOptions.Friends],
+          },
+        },
+        page,
+        currentUserId
+      );
+      return posts;
     }
   }
 
-  private async paginatePosts(query: object, page: number) {
+  private async paginatePosts(
+    query: object,
+    page: number,
+    currentUserId?: Types.ObjectId
+  ): Promise<{
+    posts: IPost[];
+    totalPages: number;
+    totalPosts: number;
+    currentPage: number;
+  }> {
     const postsPerPage = 7;
     const totalPosts = await Post.countDocuments(query).exec();
     const totalPages = Math.ceil(totalPosts / postsPerPage);
     const skip = (page - 1) * postsPerPage;
     const currentPage = page;
 
-    const posts = await Post.find(query)
+    let posts = await Post.find(query)
       .skip(skip)
       .limit(postsPerPage)
-      .populate(postPopulateFields)
+      .populate(populateOptions)
       .exec();
 
+    posts = posts.map((post) => {
+      const instance = post.toJSON();
+      instance.isLiked = post.isLikedByUser(currentUserId);
+      return instance;
+    });
     return { posts, totalPosts, totalPages, currentPage };
   }
 
@@ -115,7 +137,7 @@ class PostsService {
     userId?: mongoose.Types.ObjectId
   ): Promise<IPost> {
     const post = await Post.findById({ _id: postId })
-      .populate(postPopulateFields)
+      .populate(populateOptions)
       .exec();
     if (!post) throw new ResourceNotFoundError(postId);
     const populatedPost = post.toJSON();
@@ -130,7 +152,8 @@ class PostsService {
       imageHandlers.configureFileSaver("1-assets", "posts-images");
       const mediaItems = await Promise.all(
         images.map(async (image) => {
-          const imageName = await fileSaver.add(image);
+          const webpImage = await imageHandlers.convertImageToWebP(image);
+          const imageName = await fileSaver.add(webpImage);
           const type = imageHandlers.getMediaType(image.mimetype);
 
           return {
@@ -151,10 +174,10 @@ class PostsService {
     );
 
     if (images) {
-      await updateUserAlbum(
-        user,
+      await albumsService.updateUserAlbum(
+        user._id.toString(),
         post.imageNames.map((imageName) => imageName.url),
-        "photo",
+        MediaTypes.POST_PHOTO,
         addedPost._id.toString()
       );
     }
@@ -163,6 +186,7 @@ class PostsService {
     post = await this.getPost(addedPost._id as string, post.author);
     return post;
   }
+
   public async updatePost({ post, images }: PostProps): Promise<IPost> {
     const errors = post.validateSync();
     if (errors) throw new ValidationError(errors.message);
@@ -186,56 +210,25 @@ class PostsService {
     const updatedPost = await Post.findByIdAndUpdate(post._id, post, {
       new: true,
     });
-
-    const user = await User.findById(post.author);
-    if (user) {
-      const postIndex = user.posts.findIndex(
-        (post) => post._id === updatedPost._id
-      );
-      if (postIndex !== -1) {
-        user.posts[postIndex] = updatedPost;
-        await user.save();
-      }
-    }
     if (!updatedPost) throw new ResourceNotFoundError(post._id as string);
     return await this.getPost(updatedPost._id.toString(), updatedPost.author);
   }
 
   public async deletePost(_id: string): Promise<void> {
     const imageNames = await this.getImageNames(_id);
-    const postToDelete = await Post.findByIdAndDelete({ _id });
+    const postToDelete = await Post.findById({ _id });
     if (!postToDelete) throw new ResourceNotFoundError(_id);
-
-    await User.findByIdAndUpdate(
-      postToDelete.author._id,
-      {
-        $pull: { "albums.$[].mediaItems": { postId: _id } },
-      },
-      { multi: true }
-    );
+    await Album.findOneAndDelete({ referenceId: postToDelete.author });
     await Comment.deleteMany({ postId: _id });
     await Like.deleteMany({ targetId: _id });
-
-    await Promise.all(
-      imageNames.map(
-        async (imageName) => await fileSaver.delete(imageName.url as string)
-      )
-    );
-
-    const userId = postToDelete.author?._id;
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        $pull: {
-          posts: new mongoose.Types.ObjectId(_id),
-          "albums.$[].mediaItems": { postId: new mongoose.Types.ObjectId(_id) },
-        },
-      },
-      { new: true }
-    );
-
-    if (!updatedUser) throw new ResourceNotFoundError(userId.toString());
+    if (imageNames) {
+      await Promise.all(
+        imageNames.map(
+          async (imageName) => await fileSaver.delete(imageName.url as string)
+        )
+      );
+    }
+    await Post.findByIdAndDelete(_id);
   }
 
   private async getImageNames(_id: string): Promise<MediaItem[]> {

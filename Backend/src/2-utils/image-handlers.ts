@@ -3,6 +3,7 @@ import { UploadedFile } from "express-fileupload";
 import path from "path";
 import { fileSaver } from "uploaded-file-saver";
 import { MediaItem } from "../4-models/post";
+import sharp from "sharp";
 
 class ImageHandlers {
   public configureFileSaver(folder1: string, folder2: string): void {
@@ -41,14 +42,18 @@ class ImageHandlers {
       const imageNames: MediaItem[] = await Promise.all(
         imageArray.map(async (image, index) => {
           const oldImageName = oldImageNames[index];
-          const newImageName = await fileSaver.update(oldImageName?.url, image);
+          const webpImage = await this.convertImageToWebP(image);
+          const newImageName = await fileSaver.update(
+            oldImageName?.url,
+            webpImage
+          );
+
           return {
             url: newImageName,
             type: this.getMediaType(image.mimetype),
           };
         })
       );
-
       if (oldImageNames.length > images.length) {
         const remainingOldImageNames = oldImageNames.slice(images.length);
         await Promise.all(
@@ -61,6 +66,22 @@ class ImageHandlers {
     } else {
       return oldImageNames;
     }
+  }
+  public async convertImageToWebP(image: UploadedFile): Promise<UploadedFile> {
+    const webpFileName = image.name.replace(path.extname(image.name), ".webp");
+    const webpImageBuffer = await sharp(image.data).webp().toBuffer();
+    const webpImage: UploadedFile = {
+      data: webpImageBuffer,
+      name: webpFileName,
+      mimetype: "image/webp",
+      encoding: image.encoding,
+      tempFilePath: "",
+      truncated: false,
+      size: webpImageBuffer.length,
+      md5: "",
+      mv: image.mv,
+    };
+    return webpImage;
   }
 
   public async getImageFile(

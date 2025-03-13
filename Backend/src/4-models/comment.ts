@@ -8,7 +8,8 @@ export interface IComment extends Document {
   postId: mongoose.Types.ObjectId;
   createdAt: Date;
   likes: mongoose.Types.ObjectId[];
-  replies: IReply[];
+  replies: mongoose.Types.ObjectId[];
+  repliesCount: number;
   imageName?: string;
   isLiked: boolean;
   isLikedByUser: (userId: mongoose.Types.ObjectId) => boolean;
@@ -39,7 +40,6 @@ export const CommentSchema = new Schema<IComment>(
     replies: [
       {
         type: Schema.Types.ObjectId,
-        ref: "Reply",
       },
     ],
     imageName: {
@@ -81,6 +81,10 @@ CommentSchema.virtual("imageUrl").get(function (this: IComment) {
 
 CommentSchema.virtual("likesCount").get(function (this: IComment) {
   return this.likes.length;
+});
+
+CommentSchema.virtual("repliesCount").get(function (this: IComment) {
+  return this.replies.length;
 });
 
 export const Comment = model<IComment>("Comment", CommentSchema, "comments");

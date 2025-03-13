@@ -1,21 +1,22 @@
-import { useMenuContext } from "../../../../context/MenuContext";
+import toast from "react-hot-toast";
 import { useNavigation } from "../../../../hooks/notification-hooks/useNavigation";
 import { Notification } from "../../../../models/Notification";
 import { notificationsService } from "../../../../services/NotificationsService";
 import { dateFormat } from "../../../../utilities/DateFormat";
-import { notify } from "../../../../utilities/Notify";
 import CancelSvg from "../../../common/svgs/Cancel";
 import NotificationIcon from "./NotificationIcon";
+import defaultProfilePic from "../../../../assets/images/default-profile-pic.jpg";
 
 type NotificationCardProps = {
   notification: Notification;
+  onClick: () => void;
 };
 
 export default function NotificationCard({
   notification,
+  onClick,
 }: NotificationCardProps): JSX.Element {
   const { handleNavigation } = useNavigation();
-  const { toggleOpen } = useMenuContext();
 
   const { senderId, message, type, timestamp, referenceId, isRead } =
     notification;
@@ -24,7 +25,7 @@ export default function NotificationCard({
     try {
       await notificationsService.deleteNotification(notificationId);
     } catch (err: any) {
-      notify.error(err);
+      toast.error(err);
     }
   };
 
@@ -34,9 +35,9 @@ export default function NotificationCard({
         await notificationsService.markNotificationAsRead(notification?._id);
       }
       handleNavigation(type, referenceId);
-      toggleOpen(null);
+      onClick();
     } catch (err: any) {
-      notify.error(err);
+      toast.error(err);
     }
   };
 
@@ -53,7 +54,7 @@ export default function NotificationCard({
             <div className="relative inline-block">
               <img
                 className="w-12 h-12 rounded-full"
-                src={senderId?.photos?.profilePhoto}
+                src={senderId?.photos?.profilePhoto || defaultProfilePic}
                 alt="user-profile"
               />
               <span className="absolute bottom-0 right-0 inline-flex items-center justify-center w-5 h-5 bg-black rounded-full">

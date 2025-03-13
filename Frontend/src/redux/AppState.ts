@@ -5,6 +5,7 @@ import { PostsState } from "./PostsSlice";
 
 export type AppState = {
   user: User;
+  profileUser: User;
   postsState: PostsState;
   chatState: ChatsState;
   notificationsState: NotificationsState;

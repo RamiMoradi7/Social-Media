@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { PostMediaItem } from "../../../models/Post";
+import toast from "react-hot-toast";
 
 type DragNDropProps = {
   registerName: string;
@@ -52,9 +53,17 @@ const DragNDrop = ({
 
   const addFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setFiles((prevFiles) => [...prevFiles, ...newFiles]);
-      setValue(registerName, [...files, ...newFiles]);
+      const newFiles = Array.from(e.target.files).filter(
+        (file) =>
+          file.type.startsWith("image/") || file.type.startsWith("video/")
+      );
+
+      if (newFiles.length > 0) {
+        setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+        setValue(registerName, [...files, ...newFiles]);
+      } else {
+        toast.error("Please upload only image or video files.");
+      }
     }
   };
 
@@ -63,7 +72,7 @@ const DragNDrop = ({
       <div className="bg-white w-full max-w-md p-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 border border-gray-200">
         <div className="relative flex flex-col text-gray-600 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 p-4 transition-all duration-200 hover:border-blue-500 hover:bg-gray-100 cursor-pointer">
           <input
-            accept="*"
+            accept="image/*,video/*"
             type="file"
             required={required}
             multiple
@@ -112,7 +121,7 @@ const DragNDrop = ({
                 {typeof file === "string" ? (
                   <img
                     src={file}
-                    alt={`Existing Image ${index}`}
+                    alt={""}
                     className="w-full h-auto rounded-md mb-2"
                   />
                 ) : (

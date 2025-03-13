@@ -1,13 +1,11 @@
 import mongoose, { Document, Schema, model } from "mongoose";
 import { appConfig } from "../2-utils/app-config";
 import {
-  GenderOptions,
-  PrivacyOptions,
-  UserAddress,
+    GenderOptions,
+    PrivacyOptions,
+    UserAddress,
 } from "../3-types/user-types";
-import { IAlbum } from "./album";
 import { RoleModel } from "./enums";
-import { IPost } from "./post";
 
 export interface IUser extends Document {
   firstName: string;
@@ -25,14 +23,11 @@ export interface IUser extends Document {
     posts: PrivacyOptions;
     friendList: PrivacyOptions;
   };
-  albums: IAlbum[];
   friends?: mongoose.Types.ObjectId[];
   friendRequests?: mongoose.Types.ObjectId[];
   sentRequests?: mongoose.Types.ObjectId[];
   notificationsEnabled: boolean;
   isActive?: boolean;
-  posts?: IPost[];
-  likedPosts?: mongoose.Types.ObjectId[];
   lastLogin?: Date;
   interests?: string[];
   languages?: string[];
@@ -102,11 +97,6 @@ export const UserSchema = new Schema<IUser>(
         enum: PrivacyOptions,
       },
     },
-    albums: [
-      {
-        type: Object,
-      },
-    ],
     notificationsEnabled: { type: Boolean },
 
     friends: [
@@ -128,18 +118,12 @@ export const UserSchema = new Schema<IUser>(
         ref: "User",
       },
     ],
-    posts: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Post",
-      },
-    ],
+
     isActive: {
       type: Boolean,
       default: true,
       required: false,
     },
-    likedPosts: [{ type: Schema.Types.ObjectId, ref: "User" }],
     lastLogin: { type: Date },
     interests: [{ type: String }],
     languages: [{ type: String }],

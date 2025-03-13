@@ -1,26 +1,37 @@
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { useParams } from "react-router-dom";
-import { useCurrentUser } from "../context/UserContext";
-import { useFetch } from "./useFetch";
-import { User } from "../models/User";
+import { useCurrentUser, useProfileUser } from "../redux/Selectors";
 import { usersService } from "../services/UsersService";
+import { Status } from "./useSearchResults";
 
 export const useUserProfile = () => {
   const { _id: userProfileId } = useParams();
-  const { user: currentUser } = useCurrentUser();
+  const currentUser = useCurrentUser();
+  const profileUser = useProfileUser();
+  const [status, setStatus] = useState<Status>("idle");
+  const isOwnProfile = userProfileId === currentUser?._id;
 
-  const {
-    data: profileUser,
-    isLoading,
-    setData: setUser,
-  } = useFetch<User>(
-    () => usersService.getUserProfile(userProfileId, currentUser?._id),
-    userProfileId
-  );
+  useEffect(() => {
+    if (!currentUser) return;
+    if (!userProfileId || profileUser?._id === userProfileId) return;
+
+    setStatus("loading");
+    usersService
+      .getUserProfile(userProfileId, currentUser?._id)
+      .then(() => {
+        setStatus("success");
+      })
+      .catch((err: any) => {
+        toast.error(err);
+        setStatus("error");
+      });
+  }, [userProfileId]);
 
   return {
     currentUser,
-    profileUser,
-    setUser,
-    isLoading,
+    profileUser: isOwnProfile ? currentUser : profileUser,
+    status,
+    isOwnProfile,
   };
 };

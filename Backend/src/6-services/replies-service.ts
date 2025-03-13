@@ -1,5 +1,5 @@
 import { UploadedFile } from "express-fileupload";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { fileSaver } from "uploaded-file-saver";
 import { imageHandlers } from "../2-utils/image-handlers";
 import {
@@ -10,6 +10,7 @@ import { Comment } from "../4-models/comment";
 import { NotificationTypes } from "../4-models/notification";
 import { IReply, Reply } from "../4-models/reply";
 import { notificationsService } from "./notifications-service";
+import { populateOptions } from "../2-utils/populate-fields";
 
 type ReplyProps = {
   reply: IReply;
@@ -17,6 +18,24 @@ type ReplyProps = {
 };
 
 class RepliesService {
+  public async getRepliesByComment(
+    commentId: string,
+    userId: mongoose.Types.ObjectId
+  ): Promise<{ replies: IReply[]; postId: string }> {
+    const replies = await Reply.find({ commentId })
+      .populate(populateOptions)
+      .exec();
+
+    if (!replies) throw new ResourceNotFoundError(commentId);
+    const withLikes = replies.map((reply) => ({
+      ...reply.toJSON(),
+      isLiked: reply.isLikedByUser(userId),
+    }));
+
+    const postId = replies[0].postId.toString();
+    return { replies: withLikes, postId };
+  }
+
   public async getReply(replyId: string): Promise<IReply> {
     const reply = await Reply.findById({ _id: replyId })
       .populate("author")
@@ -33,7 +52,8 @@ class RepliesService {
 
     if (image) {
       imageHandlers.configureFileSaver("1-assets", "replies-images");
-      const imageName = await fileSaver.add(image);
+      const webpImage = await imageHandlers.convertImageToWebP(image);
+      const imageName = await fileSaver.add(webpImage);
       reply.imageName = imageName;
     }
 
@@ -65,7 +85,8 @@ class RepliesService {
     if (image) {
       imageHandlers.configureFileSaver("1-assets", "replies-images");
       const oldImageName = await this.getImageName(reply._id.toString());
-      const newImageName = await fileSaver.update(oldImageName, image);
+      const webpImage = await imageHandlers.convertImageToWebP(image);
+      const newImageName = await fileSaver.update(oldImageName, webpImage);
       reply.imageName = newImageName;
     }
 

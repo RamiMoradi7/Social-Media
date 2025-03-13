@@ -3,8 +3,10 @@
 @tailwind utilities;
 
 
-
-
+.selected {
+    border-bottom: 4px solid #007bff;
+    background-color: #f0f0f0; 
+  }
 
 .dark {
   background-color: rgba(24, 25, 26, var(--tw-bg-opacity));
@@ -52,4 +54,18 @@
 .dark .dark\:text-dark-txt {
   --tw-text-opacity: 1;
   color: rgba(184, 187, 191, var(--tw-text-opacity));
+}
+
+.fade-in {
+  opacity: 0;
+  animation: fadeInOpacity 0.6s ease-in forwards;
+}
+
+@keyframes fadeInOpacity {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }

@@ -19,19 +19,20 @@ export default function ProfilePhoto({
   toggleModal,
 }: ProfilePictureProps): JSX.Element {
   return (
-    <div className="relative">
+    <div className="relative flex justify-center items-center">
       <img
         src={profilePhoto || defaultProfile}
         alt="User Profile"
-        className=" rounded-full object-cover shadow-xl outline-2 outline-offset-2 outline-gray-800 relative w-32 h-32 md:w-48 md:h-48 lg:w-48 lg:h-48 xl:w-48 xl:h-48 md:bottom-24 lg:bottom-32 xl:bottom-28"
+        className="rounded-full object-cover shadow-xl outline-2 outline-offset-2 outline-gray-800 w-32 h-32 md:w-48 md:h-48 lg:w-48 lg:h-48 xl:w-48 xl:h-48"
         onClick={() => toggleModal("profilePicture")}
       />
+      
       {isCurrentUser && (
         <ImageInput
           onChange={onImageChange}
           imageType="profilePicture"
           id="upload_profile"
-          className=" max-w-20 absolute top-12 left-0 inline-flex cursor-pointer bg-white bg-opacity-50 p-2 rounded-full"
+          className="absolute bottom-0 left-0 mb-2 ml-2 bg-white bg-opacity-60 p-2 rounded-full cursor-pointer"
         />
       )}
     </div>

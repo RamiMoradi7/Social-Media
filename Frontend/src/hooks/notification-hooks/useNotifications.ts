@@ -1,13 +1,13 @@
-import { useSelector } from "react-redux";
-import { AppState } from "../../redux/AppState";
 import { useState } from "react";
+import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
 import { FilterType } from "../../components/areas/home/Notifications/NotificationList";
+import { AppState } from "../../redux/AppState";
 import { notificationsService } from "../../services/NotificationsService";
-import { notify } from "../../utilities/Notify";
-import { useCurrentUser } from "../../context/UserContext";
+import { useCurrentUser } from "../../redux/Selectors";
 
 export const useNotifications = () => {
-  const { user } = useCurrentUser();
+  const user = useCurrentUser();
   const { notifications, unreadCount } = useSelector(
     (appState: AppState) => appState.notificationsState
   );
@@ -24,7 +24,7 @@ export const useNotifications = () => {
     try {
       await notificationsService.markNotificationsAsRead(notificationIds);
     } catch (err: any) {
-      notify.error(err);
+      toast.error(err);
     }
   };
 
@@ -32,7 +32,7 @@ export const useNotifications = () => {
     try {
       await notificationsService.deleteAllNotifications(user._id);
     } catch (err: any) {
-      notify.error(err);
+      toast.error(err);
     }
   };
 

@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { SelectedFilterType } from "../components/areas/search-results/SearchMenuFilter";
-import { useCurrentUser } from "../context/UserContext";
 import { Post } from "../models/Post";
 import { User } from "../models/User";
 import { postsService } from "../services/PostsService";
 import { usersService } from "../services/UsersService";
 import { MediaItem } from "../types/UserTypes";
+import { useCurrentUser } from "../redux/Selectors";
 
 export type SearchState = {
   users: User[];
@@ -14,7 +13,13 @@ export type SearchState = {
   photos: MediaItem[];
 };
 
-type Status = "loading" | "error" | "success" | "idle";
+export type Status = "loading" | "error" | "success" | "idle";
+
+enum FilterTypes {
+  POSTS = "posts",
+  PHOTOS = "photos",
+  PEOPLE = "people",
+}
 
 const initialSearchState: SearchState = {
   users: [],
@@ -22,19 +27,30 @@ const initialSearchState: SearchState = {
   photos: [],
 };
 
-export const useSearchResults = (type: SelectedFilterType) => {
-  const { user } = useCurrentUser();
+export const useSearchResults = (type: FilterTypes) => {
+  const user = useCurrentUser();
   const location = useLocation();
   const [searchResults, setSearchResults] =
     useState<SearchState>(initialSearchState);
   const [status, setStatus] = useState<Status>("idle");
 
+  const resetStateEntity = (state: keyof SearchState) => {
+    setSearchResults((prevResults) => ({
+      ...prevResults,
+      [state]: [],
+    }));
+  };
+
   const query = new URLSearchParams(location.search).get("q") || "";
 
   const fetchUsers = async (query: string) => {
     try {
+      resetStateEntity("users");
       setStatus("loading");
-      const users = await usersService.getUsers({ name: query });
+      const users = await usersService.getUsers({
+        name: query,
+        currentUserId: user?._id,
+      });
       setSearchResults((prevResults) => ({ ...prevResults, users }));
     } catch (err: any) {
       setStatus("error");
@@ -45,9 +61,9 @@ export const useSearchResults = (type: SelectedFilterType) => {
 
   const fetchPosts = async (query: string) => {
     try {
+      resetStateEntity("posts");
       setStatus("loading");
       const posts = (await postsService.getPosts(user._id, query)).posts;
-      console.log(posts);
       setSearchResults((prevResults) => ({ ...prevResults, posts }));
     } catch (err: any) {
       setStatus("error");
@@ -58,23 +74,19 @@ export const useSearchResults = (type: SelectedFilterType) => {
 
   const fetchPhotos = async (query: string) => {
     try {
+      resetStateEntity("photos");
       setStatus("loading");
       const users = await usersService.getUsers({ name: query });
-      const photos = users.flatMap((user) =>
-        user.albums.flatMap((album) =>
-          album.mediaItems
-            .filter((mediaItem) => mediaItem.type === "photo")
-            .flatMap((mediaItem) => {
-              const urls = Array.isArray(mediaItem.url)
-                ? mediaItem.url
-                : [mediaItem.url];
-              return urls.map((url) => ({
-                ...mediaItem,
-                url,
-              }));
-            })
-        )
+
+      const allPhotos = await Promise.all(
+        users.map(async (user) => {
+          const userAlbums = await usersService.getUserAlbums(user._id);
+
+          return userAlbums.flatMap((album) => album.mediaItems);
+        })
       );
+
+      const photos = allPhotos.flat();
 
       setSearchResults((prevResults) => ({ ...prevResults, photos }));
     } catch (err: any) {
@@ -84,17 +96,18 @@ export const useSearchResults = (type: SelectedFilterType) => {
     }
   };
 
-  const handleSearchQuery = async (type: SelectedFilterType) => {
+  const handleSearchQuery = async (type: FilterTypes) => {
     try {
-      if (type === "people") {
-        await fetchUsers(query);
-      }
-
-      if (type === "posts") {
-        await fetchPosts(query);
-      }
-      if (type === "photos") {
-        await fetchPhotos(query);
+      switch (type) {
+        case FilterTypes.PEOPLE:
+          await fetchUsers(query);
+          break;
+        case FilterTypes.POSTS:
+          await fetchPosts(query);
+          break;
+        case FilterTypes.PHOTOS:
+          await fetchPhotos(query);
+          break;
       }
     } catch (err: any) {
       setStatus("error");

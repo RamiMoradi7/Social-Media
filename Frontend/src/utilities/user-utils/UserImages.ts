@@ -1,5 +1,5 @@
+import toast from "react-hot-toast";
 import { usersService } from "../../services/UsersService";
-import { notify } from "../Notify";
 
 type UserImageChangeProps = {
   userId: string;
@@ -17,6 +17,6 @@ export const handleUserImageChange = async ({
       await usersService.updateUser({ userId, imageFile, imageType });
     }
   } catch (err: any) {
-    notify.error(err);
+    toast.error(err);
   }
 };

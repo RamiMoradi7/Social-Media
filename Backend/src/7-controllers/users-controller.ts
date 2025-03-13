@@ -3,14 +3,18 @@ import { UploadedFile } from "express-fileupload";
 import mongoose, { FilterQuery } from "mongoose";
 import { fileSaver } from "uploaded-file-saver";
 import { imageHandlers } from "../2-utils/image-handlers";
-import { StatusCode } from "../4-models/enums";
-import { usersService } from "../6-services/users-service";
 import { IAlbum } from "../4-models/album";
+import { MediaTypes, StatusCode } from "../4-models/enums";
+import { userRequestsService } from "../6-services/user-requests-service";
+import { usersService } from "../6-services/users-service";
+import { albumsService } from "../6-services/albums-service";
+import { ValidationError } from "../4-models/client-errors";
+import { User } from "../4-models/user";
 
 type UserFilters = {
   firstName: string;
   lastName: string;
-  albums: IAlbum[];
+  currentUserId: string;
 };
 
 class UsersController {
@@ -25,11 +29,12 @@ class UsersController {
       "/users/:_id([a-f0-9A-F]{24})/:currentUserId([a-f0-9A-F]{24})",
       this.getUserProfile
     );
+    this.router.get("/users/albums/:_id([a-f0-9A-F]{24})", this.getUserAlbums);
+    this.router.get(
+      "/users/albums/:_id([a-f0-9A-F]{24})/:albumType",
+      this.getUserMediaItem
+    );
     this.router.put("/users/:_id([a-f0-9A-F]{24})", this.updateUser);
-    this.router.post("/users/add-friend", this.sendFriendRequest);
-    this.router.post("/friend-requests/accept", this.acceptFriendRequest);
-    this.router.delete("/friend-requests/delete", this.deleteFriendRequest);
-    this.router.delete("/friend-ship/delete", this.deleteFriendship);
     this.router.delete("/users/:_id([a-f0-9A-F]{24})", this.deleteUser);
     this.router.get(
       "/friendify/images/:folderPath/:imageName",
@@ -57,28 +62,26 @@ class UsersController {
             lastName: { $regex: new RegExp(part, "i") },
           }))
         );
+        0;
       }
 
       if (location) {
         queryFilters["address.country"] = location as string;
       }
 
-      const users = await usersService.getUsers(queryFilters);
+      const currentUser = await User.findById(currentUserId).select("friends");
+      const friendsList = currentUser?.friends || [];
 
-      if (!currentUserId) {
-        response.json(users);
-      } else {
-        const currentUserFriendsIds = await usersService.getUserFriendsIds(
-          currentUserId as string
-        );
-        const filteredUsers = users.filter(
-          (user) =>
-            user._id.toString() !== currentUserId &&
-            !currentUserFriendsIds.includes(user._id.toString())
-        );
-        
-        response.json(filteredUsers);
+      if (currentUserId) {
+        queryFilters._id = { $ne: currentUserId };
+        queryFilters._id = {
+          ...queryFilters._id,
+          $nin: friendsList,
+        };
       }
+
+      const users = await usersService.getUsers(queryFilters);
+      response.json(users);
     } catch (err: any) {
       next(err);
     }
@@ -90,7 +93,8 @@ class UsersController {
   ): Promise<void> {
     try {
       const _id = request.params._id;
-      const user = await usersService.getUser(new mongoose.Types.ObjectId(_id));
+      const userObjId = new mongoose.Types.ObjectId(_id);
+      const user = await usersService.getUser(userObjId);
       response.json(user);
     } catch (err: any) {
       next(err);
@@ -111,6 +115,38 @@ class UsersController {
         currentUserId
       );
       response.json(userProfile);
+    } catch (err: any) {
+      next(err);
+    }
+  }
+
+  private async getUserAlbums(
+    request: Request,
+    response: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const _id = request.params._id;
+      const albums = await albumsService.getUserAlbums(_id);
+      response.json(albums);
+    } catch (err: any) {
+      next(err);
+    }
+  }
+
+  private async getUserMediaItem(
+    request: Request,
+    response: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const _id = request.params._id;
+      const albumType = request.params.albumType as MediaTypes;
+      if (!Object.values(MediaTypes).includes(albumType)) {
+        throw new ValidationError(`Invalid album type ${albumType}`);
+      }
+      const mediaItem = await albumsService.getUserMediaItem(_id, albumType);
+      response.json(mediaItem);
     } catch (err: any) {
       next(err);
     }
@@ -137,66 +173,6 @@ class UsersController {
       });
 
       response.json(updatedUser);
-    } catch (err: any) {
-      next(err);
-    }
-  }
-  private async sendFriendRequest(
-    request: Request,
-    response: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const { senderUserId, receiverUserId } = request.body;
-      const { senderUser, receiverUser } = await usersService.sendFriendRequest(
-        senderUserId,
-        receiverUserId
-      );
-      response.json({ senderUser, receiverUser });
-    } catch (err: any) {
-      next(err);
-    }
-  }
-  private async acceptFriendRequest(
-    request: Request,
-    response: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const { senderUserId, receiverUserId } = request.body;
-      const { senderUser, receiverUser } =
-        await usersService.acceptFriendRequest(senderUserId, receiverUserId);
-      response.json({ senderUser, receiverUser });
-    } catch (err: any) {
-      next(err);
-    }
-  }
-  private async deleteFriendRequest(
-    request: Request,
-    response: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const { senderUserId, receiverUserId } = request.body;
-      const { senderUser, receiverUser } =
-        await usersService.deleteFriendRequest(senderUserId, receiverUserId);
-      response.json({ senderUser, receiverUser });
-    } catch (err: any) {
-      next(err);
-    }
-  }
-  private async deleteFriendship(
-    request: Request,
-    response: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const { senderUserId, receiverUserId } = request.body;
-      const { senderUser, receiverUser } = await usersService.deleteFriendship(
-        senderUserId,
-        receiverUserId
-      );
-      response.json({ senderUser, receiverUser });
     } catch (err: any) {
       next(err);
     }

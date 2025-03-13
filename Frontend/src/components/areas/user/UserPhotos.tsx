@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { User } from "../../../models/User";
+import { useFetch } from "../../../hooks/useFetch";
+import { Album } from "../../../models/User";
+import { useProfileUser } from "../../../redux/Selectors";
+import { usersService } from "../../../services/UsersService";
 import { MediaItem } from "../../../types/UserTypes";
 import PhotosSection from "../search-results/PhotosSection";
 
@@ -7,21 +10,20 @@ type MediaItemGroups = {
   [key in MediaItem["type"]]: MediaItem[];
 };
 
-type UserPhotosProps = {
-  currentUser: User;
-};
-
-export default function UserPhotos({
-  currentUser,
-}: UserPhotosProps): JSX.Element {
-  const { albums, firstName } = currentUser;
+export default function UserPhotos(): JSX.Element {
+  const profileUser = useProfileUser();
+  const currentUser = profileUser;
+  const { data: albums } = useFetch<Album[]>(() =>
+    usersService.getUserAlbums(currentUser?._id)
+  );
+  const { firstName } = currentUser;
   const [selected, setSelected] = useState<"photos" | "albums">("photos");
 
-  const flattenMediaItems: MediaItem[] = albums.flatMap(
+  const flattenMediaItems: MediaItem[] = albums?.flatMap(
     (album) => album.mediaItems
   );
 
-  const groupedMediaItems: MediaItemGroups = flattenMediaItems.reduce(
+  const groupedMediaItems: MediaItemGroups = flattenMediaItems?.reduce(
     (acc, item) => {
       if (!acc[item.type]) {
         acc[item.type] = [];
@@ -31,7 +33,7 @@ export default function UserPhotos({
     },
     {} as MediaItemGroups
   );
-  console.log(groupedMediaItems?.photo);
+  console.log(albums);
   return (
     <div className="container mx-auto p-4">
       <div className="flex flex-col md:flex-row items-center justify-between mb-6">
@@ -65,8 +67,8 @@ export default function UserPhotos({
 
       {selected === "photos" && (
         <div className="border-t border-gray-300 pt-4">
-          {groupedMediaItems.photo?.length ? (
-            <PhotosSection photos={groupedMediaItems.photo} />
+          {groupedMediaItems?.photo?.length ? (
+            <PhotosSection photos={groupedMediaItems?.photo} />
           ) : (
             <p className="text-center dark:text-dark-txt">
               No photos available.
@@ -81,8 +83,8 @@ export default function UserPhotos({
             <h3 className="text-xl font-semibold dark:text-dark-txt mb-4">
               Cover Photos
             </h3>
-            {groupedMediaItems.coverPhoto?.length ? (
-              <PhotosSection photos={groupedMediaItems.coverPhoto} />
+            {groupedMediaItems?.coverPhoto?.length ? (
+              <PhotosSection photos={groupedMediaItems?.coverPhoto} />
             ) : (
               <p className="text-center dark:text-dark-txt">
                 No cover photos available.
@@ -94,8 +96,8 @@ export default function UserPhotos({
             <h3 className="text-xl font-semibold dark:text-dark-txt mb-4">
               Profile Photos
             </h3>
-            {groupedMediaItems.profilePicture?.length ? (
-              <PhotosSection photos={groupedMediaItems.profilePicture} />
+            {groupedMediaItems?.profilePicture?.length ? (
+              <PhotosSection photos={groupedMediaItems?.profilePicture} />
             ) : (
               <p className="text-center dark:text-dark-txt">
                 No profile photos available.

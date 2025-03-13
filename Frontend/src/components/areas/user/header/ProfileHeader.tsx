@@ -1,4 +1,4 @@
-import { ChangeEvent, SetStateAction, useState } from "react";
+import { ChangeEvent, useState } from "react";
 import { User } from "../../../../models/User";
 import { handleUserImageChange } from "../../../../utilities/user-utils/UserImages";
 import ProfileModal from "../ProfileModal";
@@ -8,71 +8,70 @@ import ProfileInfo from "./ProfileInfo";
 import ProfilePhoto from "./ProfilePhoto";
 
 type ProfileHeaderProps = {
-    profileUser: User;
-    currentUser: User;
-    setUser: (value: SetStateAction<User>) => void;
+  profileUser: User;
+  currentUser: User;
+  isOwnProfile: boolean;
 };
 
 export default function ProfileHeader({
-    profileUser,
-    currentUser,
-    setUser,
+  profileUser,
+  currentUser,
+  isOwnProfile,
 }: ProfileHeaderProps): JSX.Element {
-    const [isOpen, setIsOpen] = useState<string | null>(null);
-    const toggleModal = (type: string | null) => {
-        setIsOpen(type);
-    };
+  const [isOpen, setIsOpen] = useState<string | null>(null);
+  const toggleModal = (type: string | null) => {
+    setIsOpen(type);
+  };
 
-    const handleImageChange = async (
-        event: ChangeEvent<HTMLInputElement>,
-        imageType: string
-    ) => {
-        const imageFile = event.target.files[0];
-        await handleUserImageChange({
-            imageFile,
-            imageType,
-            userId: profileUser._id,
-        });
-    };
-    const isCurrentUser = currentUser?._id === profileUser?._id;
+  const handleImageChange = async (
+    event: ChangeEvent<HTMLInputElement>,
+    imageType: string
+  ) => {
+    const imageFile = event.target.files[0];
+    await handleUserImageChange({
+      imageFile,
+      imageType,
+      userId: profileUser._id,
+    });
+  };
 
-    return (
-        <div className="max-w-[1250px] bg-gray-100 mx-auto flex flex-col dark:bg-dark-second dark:text-white">
-            <CoverPhoto
-                coverPhoto={profileUser?.photos?.coverPhoto}
-                isCurrentUser={isCurrentUser}
-                onImageChange={handleImageChange}
-                toggleModal={toggleModal}
+  return (
+    <div className="max-w-[1250px] bg-gray-100 mx-auto flex flex-col dark:bg-dark-second dark:text-white">
+      <CoverPhoto
+        coverPhoto={profileUser?.photos?.coverPhoto}
+        isCurrentUser={isOwnProfile}
+        onImageChange={handleImageChange}
+        toggleModal={toggleModal}
+      />
+      <div className="w-full mx-auto flex justify-end">
+        <div className="text-center">
+          <ProfileInfo
+            currentUser={currentUser}
+            profileUser={profileUser}
+            isCurrentUser={isOwnProfile}
+          />
+          {
+            <ProfileButtons
+              currentUser={currentUser}
+              profileUser={profileUser}
+              isCurrentUser={isOwnProfile}
             />
-            <div className="w-full mx-auto flex justify-end">
-                <div className="text-center">
-                    <ProfileInfo
-                        currentUser={currentUser}
-                        profileUser={profileUser}
-                        isCurrentUser={isCurrentUser}
-                    />
-                    <ProfileButtons
-                        currentUser={currentUser}
-                        profileUser={profileUser}
-                        isCurrentUser={isCurrentUser}
-                        setUser={setUser}
-                    />
-                </div>
-                <ProfilePhoto
-                    profilePhoto={profileUser?.photos?.profilePhoto}
-                    isCurrentUser={isCurrentUser}
-                    onImageChange={handleImageChange}
-                    toggleModal={toggleModal}
-                />
-                {
-                    <ProfileModal
-                        albums={profileUser?.albums}
-                        isModalOpen={isOpen}
-                        toggleModal={toggleModal}
-                        currentUserId={currentUser?._id}
-                    />
-                }
-            </div>
+          }
         </div>
-    );
+        <ProfilePhoto
+          profilePhoto={profileUser?.photos?.profilePhoto}
+          isCurrentUser={isOwnProfile}
+          onImageChange={handleImageChange}
+          toggleModal={toggleModal}
+        />
+        {
+          <ProfileModal
+            isModalOpen={isOpen}
+            toggleModal={toggleModal}
+            profileUserId={profileUser?._id}
+          />
+        }
+      </div>
+    </div>
+  );
 }

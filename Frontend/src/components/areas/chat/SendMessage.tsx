@@ -1,12 +1,12 @@
 import {
-  FieldValues,
-  FormProvider,
-  SubmitHandler,
-  useForm,
+    FieldValues,
+    FormProvider,
+    SubmitHandler,
+    useForm,
 } from "react-hook-form";
+import toast from "react-hot-toast";
 import { Message } from "../../../models/Message";
 import { socketService } from "../../../services/SocketService";
-import { notify } from "../../../utilities/Notify";
 import UploadImage from "../../common/inputs/UploadImage";
 
 type sendMessageProps = {
@@ -33,7 +33,7 @@ export default function SendMessage({
       });
       reset();
     } catch (err: any) {
-      notify.error(err);
+      toast.error(err);
     }
   };
   return (

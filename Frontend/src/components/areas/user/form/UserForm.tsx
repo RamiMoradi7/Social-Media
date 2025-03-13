@@ -5,11 +5,11 @@ import {
     SubmitHandler,
     useForm,
 } from "react-hook-form";
-import { useCurrentUser } from "../../../../context/UserContext";
+import toast from "react-hot-toast";
 import { User } from "../../../../models/User";
 import { usersService } from "../../../../services/UsersService";
-import { notify } from "../../../../utilities/Notify";
 import FormFields from "./FormFields";
+import { useCurrentUser } from "../../../../redux/Selectors";
 
 
 type UserFormProps = {
@@ -19,7 +19,7 @@ type UserFormProps = {
 export default function UserForm({ toggleModal }: UserFormProps): JSX.Element {
     const methods = useForm();
     const { setValue, reset, watch } = methods;
-    const { user } = useCurrentUser();
+    const user = useCurrentUser();
 
     useEffect(() => {
         if (user) {
@@ -42,7 +42,7 @@ export default function UserForm({ toggleModal }: UserFormProps): JSX.Element {
                 toggleModal();
             }
         } catch (err: any) {
-            notify.error(err);
+            toast.error(err);
         }
     };
 

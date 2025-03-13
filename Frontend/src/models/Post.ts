@@ -18,7 +18,10 @@ export class Post {
   photos: PostMediaItem[];
   likesCount: number;
   images: FileList;
-  comments: Comment[];
+  recordComments: Record<string, Comment>;
+  commentsCount: number;
   privacy: "Public" | "Private" | "Friends";
+  targetUserId?: string;
+  targetUser: Partial<User>;
   isLiked: boolean;
 }

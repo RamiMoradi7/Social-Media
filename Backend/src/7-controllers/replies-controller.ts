@@ -4,6 +4,7 @@ import { imageHandlers } from "../2-utils/image-handlers";
 import { StatusCode } from "../4-models/enums";
 import { Reply } from "../4-models/reply";
 import { repliesService } from "../6-services/replies-service";
+import mongoose from "mongoose";
 
 class RepliesController {
   public readonly router = express.Router();
@@ -11,6 +12,10 @@ class RepliesController {
     this.registerRoutes();
   }
   private registerRoutes(): void {
+    this.router.get(
+      "/replies/commentId/:commentId/userId/:userId",
+      this.getRepliesByComment
+    );
     this.router.post("/replies", this.addReply);
     this.router.put("/replies/:_id([a-f0-9A-F]{24})", this.updateReply);
     this.router.delete("/replies/:_id([a-f0-9A-F]{24})", this.deleteReply);
@@ -18,6 +23,25 @@ class RepliesController {
       "/friendify/images/:folderPath/:imageName",
       imageHandlers.getImageFile
     );
+  }
+
+  private async getRepliesByComment(
+    request: Request,
+    response: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const commentId = request.params.commentId;
+      const userId = request.params.userId;
+      const userObj = new mongoose.Types.ObjectId(userId);
+      const replies = await repliesService.getRepliesByComment(
+        commentId,
+        userObj
+      );
+      response.json(replies);
+    } catch (err: any) {
+      next(err);
+    }
   }
 
   private async addReply(

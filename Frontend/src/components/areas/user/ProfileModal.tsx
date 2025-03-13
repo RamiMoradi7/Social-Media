@@ -1,83 +1,75 @@
-import { useEffect } from "react";
-import { useSelector } from "react-redux";
-import { Album } from "../../../models/User";
-import { AppState } from "../../../redux/AppState";
-import { initPosts } from "../../../redux/PostsSlice";
-import { store } from "../../../redux/Store";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { useDispatch } from "react-redux";
+import { ContextType, initPosts } from "../../../redux/PostsSlice";
 import { postsService } from "../../../services/PostsService";
+import { usersService } from "../../../services/UsersService";
+import { MediaItem } from "../../../types/UserTypes";
+import PostsLoader from "../../common/loader/PostsLoader";
 import Modal from "../../common/Modal";
 import { PostCard } from "../home/Post/Post";
+import { useCurrentUser, usePostSelector } from "../../../redux/Selectors";
 
 type ProfileModalsProps = {
-  isModalOpen: string;
-  toggleModal: (type: string | null) => void;
-  albums: Album[];
-  currentUserId: string;
+    isModalOpen: string | null;
+    toggleModal: (type: string | null) => void;
+    profileUserId: string
 };
 
 export default function ProfileModal({
-  isModalOpen,
-  toggleModal,
-  albums,
-  currentUserId,
+    isModalOpen,
+    toggleModal,
+    profileUserId
 }: ProfileModalsProps): JSX.Element {
+    const [activeMediaItem, setActiveMediaItem] = useState<MediaItem | null>(null)
+    const [isLoading, setIsLoading] = useState(false)
+    const dispatch = useDispatch()
+    const user = useCurrentUser()
+    const { _id: currentUserId } = user
+    const post = usePostSelector(activeMediaItem?.postId)
 
-    const getActiveImagePost = (imageType: string) => {
-    if (!albums || !imageType) return null;
+    const getActiveImagePost = async (imageType: string) => {
+        if (!imageType) return
+        try {
+            setIsLoading(true)
+            const userMediaItem = await usersService.getUserMediaItem(profileUserId, imageType)
+            setActiveMediaItem(userMediaItem)
 
-    const userAlbum = albums.find(
-      (album) => album.title.toLowerCase() === imageType.toLowerCase()
-    );
+        } catch (err: any) {
+            toast.error(`The post you are looking for is not available at this moment.`)
+            setActiveMediaItem(null)
+        } finally {
+            setIsLoading(false)
 
-    if (!userAlbum) return null;
+        }
+    };
+    useEffect(() => {
+        if (isModalOpen !== null) {
+            getActiveImagePost(isModalOpen)
+        }
+    }, [isModalOpen]);
 
-    const profilePictures = userAlbum.mediaItems.filter(
-      (item) => item.type.toLowerCase() === imageType.toLowerCase()
-    );
+    useEffect(() => {
+        if (!post && activeMediaItem) {
+            postsService.getPostByUser(activeMediaItem.postId, currentUserId)
+                .then((post) => dispatch(initPosts({ posts: [post], context: ContextType.Profile })))
+        }
+    }, [activeMediaItem])
 
-    if (profilePictures.length === 0) return null;
-
-    return profilePictures.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )[0];
-  };
-
-  const activeImagePost = getActiveImagePost(isModalOpen || "");
-
-  const fetchPost = async (postId: string) => {
-    try {
-      if (postId) {
-        const post = await postsService.getPostByUser(postId, currentUserId);
-        store.dispatch(initPosts({ posts: [post], context: "profile" }));
-      }
-    } catch (error) {
-      console.log(error);
+    if (!isModalOpen || !activeMediaItem || !post) {
+        return null;
     }
-  };
-
-  const post = useSelector((appState: AppState) =>
-    appState.postsState.userProfilePosts.find(
-      (post) => post?._id === activeImagePost?.postId
-    )
-  );
-
-  useEffect(() => {
-    if (activeImagePost && !post) {
-      fetchPost(activeImagePost.postId);
-    }
-  }, [activeImagePost, post, currentUserId]);
-
-  return (
-    <>
-      {isModalOpen && activeImagePost && (
-        <Modal
-          toggleModal={() => {
-            toggleModal(null);
-          }}
-          component={post ? <PostCard post={post} /> : <div>Loading...</div>}
-        />
-      )}
-    </>
-  );
+    return (
+        <>
+            {isModalOpen && activeMediaItem && (
+                <Modal
+                    toggleModal={() => {
+                        toggleModal(null);
+                    }}
+                    component={isLoading ? <PostsLoader /> : <PostCard post={post} />
+                    }
+                />
+            )}
+        </>
+    );
 }

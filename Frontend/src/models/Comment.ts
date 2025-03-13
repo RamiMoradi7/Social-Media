@@ -12,6 +12,7 @@ export class Comment {
   image: File;
   imageUrl: string;
   likesCount: number;
-  replies: Reply[];
+  recordReplies: Record<string, Reply>;
+  repliesCount: number;
   isLiked: boolean;
 }

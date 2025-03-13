@@ -14,13 +14,27 @@ const authSlice = createSlice({
       return action.payload;
     },
     updateUser(state, action: PayloadAction<User>) {
-      return action.payload;
+      return { ...state, ...action.payload };
     },
+    updateUserRequests(state, action: PayloadAction<Partial<User>>) {
+      const { friendRequests, sentRequests, friends } = action.payload;
+      if (friends) {
+        state.friends = action.payload.friends;
+      }
+      if (sentRequests) {
+        state.sentRequests = action.payload.sentRequests;
+      }
+      if (friendRequests) {
+        state.friendRequests = action.payload.friendRequests;
+      }
+    },
+
     logout(state) {
       return null;
     },
   },
 });
 
-export const { register, login, logout, updateUser } = authSlice.actions;
+export const { register, login, logout, updateUser, updateUserRequests } =
+  authSlice.actions;
 export const authReducers = authSlice.reducer;

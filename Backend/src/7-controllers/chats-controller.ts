@@ -10,7 +10,7 @@ class ChatsController {
     this.registerRoutes();
   }
   private registerRoutes(): void {
-    this.router.get("/chats/:_id([a-f0-9A-F]{24})", this.getChats);
+    this.router.post("/chats/:_id([a-f0-9A-F]{24})", this.getChats);
     this.router.post("/chats/", this.startChat);
     this.router.put("/chats/:_id([a-f0-9A-F]{24})", this.updateChat);
     this.router.delete(

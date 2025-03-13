@@ -13,6 +13,7 @@ import { Reply } from "../4-models/reply";
 import { notificationsService } from "./notifications-service";
 import { NotificationTypes } from "../4-models/notification";
 import { socketService } from "./socket-service";
+import { populateOptions } from "../2-utils/populate-fields";
 
 type CommentProps = {
   comment: IComment;
@@ -20,16 +21,37 @@ type CommentProps = {
 };
 
 class CommentsService {
+  public async getCommentsByPost(
+    postId: string,
+    userId: mongoose.Types.ObjectId
+  ): Promise<IComment[]> {
+    const comments = await Comment.find({ postId })
+      .populate([
+        {
+          path: "author",
+          select:
+            "firstName lastName profilePicture coverPhoto photos isActive",
+        },
+        {
+          path: "likes",
+          select: "profilePicture coverPhoto",
+        },
+      ])
+      .exec();
+    if (!comments) throw new ResourceNotFoundError(postId);
+    const withLikes = comments.map((comment) => ({
+      ...comment.toJSON(),
+      isLiked: comment.isLikedByUser(userId),
+    }));
+    return withLikes;
+  }
+
   public async getComment(
     commentId: string,
     userId: mongoose.Types.ObjectId
   ): Promise<IComment> {
     const comment = await Comment.findById({ _id: commentId })
-      .populate("postId")
-      .populate({
-        path: "author",
-        select: "firstName lastName profilePicture coverPhoto",
-      })
+      .populate(populateOptions[0])
       .exec();
     if (!comment) throw new ResourceNotFoundError(commentId);
     comment.isLiked = comment.isLikedByUser(userId);
@@ -44,7 +66,8 @@ class CommentsService {
 
     if (image) {
       imageHandlers.configureFileSaver("1-assets", "comments-images");
-      const imageName = await fileSaver.add(image);
+      const webpImage = await imageHandlers.convertImageToWebP(image);
+      const imageName = await fileSaver.add(webpImage);
       comment.imageName = imageName;
     }
     const addedComment = await Comment.create(comment);
@@ -80,7 +103,8 @@ class CommentsService {
     if (image) {
       imageHandlers.configureFileSaver("1-assets", "comments-images");
       const oldImageName = await this.getImageName(comment._id as string);
-      const newImageName = await fileSaver.update(oldImageName, image);
+      const webpImage = await imageHandlers.convertImageToWebP(image);
+      const newImageName = await fileSaver.update(oldImageName, webpImage);
       comment.imageName = newImageName;
     }
     const updatedComment = await Comment.findByIdAndUpdate(

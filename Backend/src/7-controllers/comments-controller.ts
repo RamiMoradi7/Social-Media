@@ -4,6 +4,7 @@ import { StatusCode } from "../4-models/enums";
 import { commentsService } from "../6-services/comments-service";
 import { UploadedFile } from "express-fileupload";
 import { imageHandlers } from "../2-utils/image-handlers";
+import mongoose from "mongoose";
 
 class CommentsController {
   public readonly router = express.Router();
@@ -12,6 +13,10 @@ class CommentsController {
   }
   private registerRoutes(): void {
     this.router.get("/comments/:_id([a-f0-9A-F]{24})", this.getComment);
+    this.router.get(
+      "/comments/postId/:postId/userId/:userId",
+      this.getCommentsByPost
+    );
     this.router.post("/comments", this.addComment);
     this.router.put("/comments/:_id([a-f0-9A-F]{24})", this.updateComment);
     this.router.delete("/comments/:_id([a-f0-9A-F]{24})", this.deleteComment);
@@ -31,6 +36,25 @@ class CommentsController {
       const userId = request.body;
       const comment = await commentsService.getComment(_id, userId);
       response.json(comment);
+    } catch (err: any) {
+      next(err);
+    }
+  }
+
+  private async getCommentsByPost(
+    request: Request,
+    response: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const postId = request.params.postId;
+      const userId = request.params.userId;
+      const userObjId = new mongoose.Types.ObjectId(userId);
+      const comments = await commentsService.getCommentsByPost(
+        postId,
+        userObjId
+      );
+      response.json(comments);
     } catch (err: any) {
       next(err);
     }

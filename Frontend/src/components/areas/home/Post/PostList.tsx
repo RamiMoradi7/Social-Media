@@ -1,28 +1,30 @@
 import { useMemo } from "react";
-import { useCurrentUser } from "../../../../context/UserContext";
 import { usePosts } from "../../../../hooks/usePosts";
-import Loader from "../../../common/loader/Loader";
+import { ContextType } from "../../../../redux/PostsSlice";
+import PostsLoader from "../../../common/loader/PostsLoader";
 import AddPost from "./AddPost";
 import { PostCard } from "./Post";
+import { ErrMsg } from "../../../common/ErrMsg";
+import { useCurrentUser, useStateStatus } from "../../../../redux/Selectors";
 
 export default function PostList(): JSX.Element {
-  const {
-    user: { _id: userId },
-  } = useCurrentUser();
+    const user = useCurrentUser();
+    const { _id: userId } = user
 
-  const { posts, isLoading } = usePosts({ userId, context: "home" });
-  const memorizedPosts = useMemo(() => posts, [posts]);
+    const { posts, status } = usePosts({ userId, context: ContextType.Home });
+    const isStateLoading = useStateStatus()
+    const memorizedPosts = useMemo(() => posts, [posts]);
 
-  if (isLoading) {
-    return <Loader />;
-  }
+    if (isStateLoading) return <PostsLoader />;
 
-  return (
-    <div>
-      <AddPost />
-      {memorizedPosts?.map((post) => (
-        <PostCard key={post._id} post={post} />
-      ))}
-    </div>
-  );
+    return (
+        <div>
+            <AddPost />
+            {Object.values(memorizedPosts)?.map((post) => (
+                <PostCard key={post._id} post={post} />
+            ))}
+            {status === "loading" && <PostsLoader />}
+            {status === "error" && <ErrMsg />}
+        </div>
+    );
 }

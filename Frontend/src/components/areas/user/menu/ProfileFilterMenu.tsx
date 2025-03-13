@@ -12,7 +12,7 @@ export default function ProfileFilterMenu({
     const filterOptions: FilterOption[] = ["posts", "photos", "about", "friends"];
     return (
         <>
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-6 mt-6">
                 <div className="flex border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden">
                     {filterOptions.map((option) => (
                         <Button

@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import { AppState } from "../redux/AppState";
-import { PostsResponse, postsService } from "../services/PostsService";
-import { notify } from "../utilities/Notify";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { ContextType } from "../redux/PostsSlice";
-import _ from "lodash";
+import { PostsResponse, postsService } from "../services/PostsService";
+import { Status } from "./useSearchResults";
+import { usePostsSelector } from "../redux/Selectors";
 
 type usePostsProps = {
   userId: string;
@@ -13,45 +12,39 @@ type usePostsProps = {
 };
 
 export const usePosts = ({ userId, currentUserId, context }: usePostsProps) => {
-  const { posts, userProfilePosts, isLoading } = useSelector(
-    (appState: AppState) => appState.postsState
-  );
+  const posts = usePostsSelector();
+  const [status, setStatus] = useState<Status>("idle");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [loading, setLoading] = useState(false);
 
-  const fetchPosts = _.debounce(
-    useCallback(
-      async (page: number) => {
-        if (!hasMore || loading) return;
-        setLoading(true);
-        try {
-          let postsResponse: PostsResponse;
-          if (context === "home") {
-            postsResponse = await postsService.getPosts(userId, null, page);
-          } else if (context === "profile") {
-            postsResponse = await postsService.getUserProfilePosts(
-              userId,
-              currentUserId,
-              page
-            );
-          }
-          if (postsResponse) {
-            setPage(postsResponse.currentPage);
-            setHasMore(postsResponse.currentPage < postsResponse.totalPages);
-          }
-          return postsResponse;
-        } catch (err: any) {
-          notify.error(err.message || "An error occurred while fetching posts");
-          setLoading(false);
-        } finally {
-          setLoading(false);
-        }
-      },
-      [context, userId, currentUserId, loading]
-    ),
-    500
-  );
+  const fetchPosts = async (page: number) => {
+    if (!hasMore) return;
+    setStatus("loading");
+    try {
+      let postsResponse: PostsResponse;
+
+      switch (context) {
+        case ContextType.Home:
+          postsResponse = await postsService.getPosts(userId, null, page);
+          break;
+        case ContextType.Profile:
+          postsResponse = await postsService.getUserProfilePosts(
+            userId,
+            currentUserId,
+            page
+          );
+          break;
+      }
+      if (postsResponse) {
+        setPage(postsResponse.currentPage);
+        setHasMore(postsResponse.currentPage < postsResponse.totalPages);
+      }
+      setStatus("success");
+    } catch (err: any) {
+      toast.error(err?.message || "An error occurred while fetching posts");
+      setStatus("error");
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -59,7 +52,7 @@ export const usePosts = ({ userId, currentUserId, context }: usePostsProps) => {
         window.innerHeight + document.documentElement.scrollTop >=
         document.documentElement.offsetHeight - 100
       ) {
-        if (hasMore) {
+        if (hasMore && status !== "loading") {
           fetchPosts(page + 1);
         }
       }
@@ -67,16 +60,15 @@ export const usePosts = ({ userId, currentUserId, context }: usePostsProps) => {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [hasMore, loading, fetchPosts, page]);
+  }, [hasMore, status]);
 
-  //initial fetching.
   useEffect(() => {
     fetchPosts(page);
   }, []);
 
   return {
     posts,
-    userProfilePosts,
-    isLoading,
+    userProfilePosts: posts,
+    status,
   };
 };

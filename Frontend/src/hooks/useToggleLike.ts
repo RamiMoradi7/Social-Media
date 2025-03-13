@@ -1,12 +1,12 @@
 import { ActionCreatorWithOptionalPayload } from "@reduxjs/toolkit";
 import { useCallback } from "react";
+import toast from "react-hot-toast";
 import { Comment } from "../models/Comment";
+import { Post } from "../models/Post";
 import { Reply } from "../models/Reply";
 import { User } from "../models/User";
 import { store } from "../redux/Store";
 import { LikeProps, likesService } from "../services/LikesService";
-import { notify } from "../utilities/Notify";
-import { Post } from "../models/Post";
 
 export const useToggleLike = () => {
   const handleLikeClick = async (like: LikeProps) => {
@@ -18,7 +18,7 @@ export const useToggleLike = () => {
         userId,
       });
     } catch (err: any) {
-      notify.error(err);
+      toast.error(err);
     }
   };
 
@@ -45,7 +45,7 @@ export const useToggleLike = () => {
         store.dispatch(updateAction(updatedEntity));
         await handleLikeClick({ targetId, targetType, userId: user?._id });
       } catch (err: any) {
-        notify.error(err);
+        toast.error(err);
       }
     },
     []

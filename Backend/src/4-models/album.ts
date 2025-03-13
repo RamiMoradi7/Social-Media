@@ -1,8 +1,8 @@
 import mongoose, { Document, Schema, model } from "mongoose";
-import { appConfig } from "../2-utils/app-config";
+import { MediaTypes } from "./enums";
 
 export interface IMediaItem {
-  type: "profilePicture" | "coverPhoto" | "photo" | "video";
+  type: MediaTypes;
   url: string[];
   createdAt: Date;
   postId?: mongoose.Types.ObjectId;
@@ -12,12 +12,13 @@ export interface IAlbum extends Document {
   title: string;
   mediaItems: IMediaItem[];
   createdAt: Date;
+  referenceId: mongoose.Types.ObjectId;
 }
 
 const MediaItemSchema = new Schema<IMediaItem>({
   type: {
     type: String,
-    enum: ["profilePicture", "coverPhoto", "photo", "video"],
+    enum: MediaTypes,
     required: true,
   },
   url: {
@@ -37,10 +38,15 @@ const AlbumSchema = new Schema<IAlbum>(
     title: { type: String, required: true },
     mediaItems: [MediaItemSchema],
     createdAt: { type: Date, default: Date.now },
+    referenceId: {
+      type: Schema.Types.ObjectId,
+    },
   },
   {
     toJSON: { virtuals: true },
+    id: false,
+    versionKey: false,
   }
 );
 
-export const Album = model<IAlbum>("Album", AlbumSchema);
+export const Album = model<IAlbum>("Album", AlbumSchema, "albums");

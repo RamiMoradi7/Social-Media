@@ -1,6 +1,6 @@
-import mongoose, { Document, Schema, model } from "mongoose";
+import mongoose, { Document, Schema, Types, model } from "mongoose";
 import { appConfig } from "../2-utils/app-config";
-import { IComment } from "./comment";
+import { PrivacyOptions } from "./enums";
 
 export type MediaItem = {
   url: string;
@@ -12,10 +12,12 @@ export interface IPost extends Document {
   postedAt: Date;
   author: mongoose.Types.ObjectId;
   tags?: string;
-  likes: mongoose.Types.ObjectId[];
+  likes: Types.ObjectId[];
   imageNames: MediaItem[];
-  comments: IComment[];
-  privacy: "Public" | "Private" | "Friends";
+  comments: mongoose.Types.ObjectId[];
+  commentsCount: number;
+  privacy: PrivacyOptions;
+  targetUser?: mongoose.Types.ObjectId;
   isLiked: boolean;
   isLikedByUser: (userId: mongoose.Types.ObjectId) => boolean;
 }
@@ -53,13 +55,16 @@ export const PostSchema = new Schema<IPost>(
     comments: [
       {
         type: Schema.Types.ObjectId,
-        ref: "Comment",
       },
     ],
     privacy: {
       type: String,
-      enum: ["Public", "Private", "Friends"],
+      enum: PrivacyOptions,
       required: [true, "Post privacy is missing."],
+    },
+    targetUser: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
   },
   {
@@ -67,10 +72,6 @@ export const PostSchema = new Schema<IPost>(
     id: false,
     toJSON: {
       virtuals: true,
-      transform: function (doc, ret) {
-        ret.isLiked = doc.isLiked;
-        return ret;
-      },
     },
   }
 );
@@ -94,5 +95,7 @@ PostSchema.virtual("photos").get(function (this: IPost) {
 PostSchema.virtual("likesCount").get(function (this: IPost) {
   return this.likes.length;
 });
-
+PostSchema.virtual("commentsCount").get(function (this: IPost) {
+  return this.comments.length;
+});
 export const Post = model<IPost>("Post", PostSchema, "posts");

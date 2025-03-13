@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { notify } from "../utilities/Notify";
+import toast from "react-hot-toast";
 
 export type FetchResponse<T> = {
   data: T | null;
@@ -13,13 +13,12 @@ export const useFetch = <T>(
 ): FetchResponse<T> => {
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
   const fetchData = useCallback(
     (id?: string) => {
       setIsLoading(true);
       fnQuery(id)
         .then((data) => setData(data))
-        .catch((err: any) => notify.error(err))
+        .catch((err: any) => toast.error(err))
         .finally(() => setIsLoading(false));
     },
     [fnQuery]

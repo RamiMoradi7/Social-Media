@@ -18,25 +18,27 @@ import { notificationsRouter } from "./7-controllers/notifications-controller";
 import rateLimit from "express-rate-limit";
 
 const rateLimiter = rateLimit({
-  windowMs: 1000, // 1 second
-  max: 30, // Limit each IP to 30 req per windowMs
+  windowMs: 1000,
+  max: 30,
   message: "Too many requests from this IP, please try again later.",
   headers: true,
 });
+// const corsOptions = {
+//   origin: ["https://friendify.onrender.com", "http://localhost:3000"],
+//   credentials: true,
+// };
 
 class App {
   private server = express();
 
-  // Start app:
   public async start(): Promise<void> {
     this.server.use(cors());
+    // this.server.use(cors(corsOptions));
     this.server.use(express.json());
     this.server.use(expressFileUpload());
 
     this.server.use(rateLimiter);
-    // Register middleware:
     this.server.use(loggerMiddleware.logToConsole);
-    // Connect any controller route to the server:
     this.server.use(
       "/api",
       authRouter,
@@ -50,12 +52,11 @@ class App {
       messagesRouter
     );
 
-    // Route not found middleware:
     this.server.use(errorsMiddleware.routeNotFound);
-
-    // Catch all middleware:
     this.server.use(errorsMiddleware.catchAll);
+
     await dal.connect();
+
     const httpServer = this.server.listen(appConfig.port, () =>
       console.log("Listening on http://localhost:" + appConfig.port)
     );

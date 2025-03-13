@@ -1,11 +1,11 @@
 export default function Stories(): JSX.Element {
   return (
-    <div className="relative flex space-x-2 pt-4">
+    <div className="relative flex space-x-2 pt-8 pb-8">
       <div className="w-1/4 sm:w-1/6 h-44 rounded-xl shadow overflow-hidden flex flex-col group cursor-pointer">
         <div className="h-3/5 overflow-hidden">
           <img
             src="./images/profile.jpg"
-            alt="picture"
+            alt=""
             className="group-hover:transform group-hover:scale-110 transition-all duration-700"
           />
         </div>
@@ -30,7 +30,10 @@ export default function Stories(): JSX.Element {
             Your story
           </span>
           <div className="w-10 h-10 rounded-full overflow-hidden absolute top-2 left-2 border-4 border-blue-500">
-            <img src="./images/tuat.jpg" alt="Profile picture" />
+            <img
+              src="./images/tuat.jpg"
+              alt=""
+            />
           </div>
         </div>
       </div>
@@ -46,7 +49,10 @@ export default function Stories(): JSX.Element {
             Lorem
           </span>
           <div className="w-10 h-10 rounded-full overflow-hidden absolute top-2 left-2 border-4 border-blue-500">
-            <img src="./images/avt-7.jpg" alt="Profile picture" />
+            <img
+              src="./images/avt-7.jpg"
+              alt=""
+            />
           </div>
         </div>
       </div>
@@ -62,7 +68,10 @@ export default function Stories(): JSX.Element {
             John Doe
           </span>
           <div className="w-10 h-10 rounded-full overflow-hidden absolute top-2 left-2 border-4 border-blue-500">
-            <img src="./images/avt-6.png" alt="Profile picture" />
+            <img
+              src="./images/avt-6.png"
+              alt=""
+            />
           </div>
         </div>
       </div>
@@ -78,7 +87,10 @@ export default function Stories(): JSX.Element {
             John Doe
           </span>
           <div className="w-10 h-10 rounded-full overflow-hidden absolute top-2 left-2 border-4 border-blue-500">
-            <img src="./images/avt-6.png" alt="Profile picture" />
+            <img
+              src="./images/avt-6.png"
+              alt=""
+            />
           </div>
         </div>
       </div>
@@ -94,7 +106,10 @@ export default function Stories(): JSX.Element {
             John Doe
           </span>
           <div className="w-10 h-10 rounded-full overflow-hidden absolute top-2 left-2 border-4 border-blue-500">
-            <img src="./images/avt-5.jpg" alt="Profile picture" />
+            <img
+              src="./images/avt-5.jpg"
+              alt=""
+            />
           </div>
         </div>
       </div>

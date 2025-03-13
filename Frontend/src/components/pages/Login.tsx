@@ -1,11 +1,11 @@
 import { FormProvider, useForm } from "react-hook-form";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useTitle } from "../../hooks/useTitle";
 import { Credentials } from "../../models/Credentials";
-import StringInput from "../common/inputs/StringInput";
-import { authService } from "../../services/AuthService";
 import { store } from "../../redux/Store";
-import { notify } from "../../utilities/Notify";
+import { authService } from "../../services/AuthService";
+import StringInput from "../common/inputs/StringInput";
 
 export default function Login(): JSX.Element {
   useTitle("Login");
@@ -16,10 +16,10 @@ export default function Login(): JSX.Element {
     try {
       await authService.login(credentials);
       const firstName = store.getState().user?.firstName;
-      notify.success(`Welcome back ${firstName} :)`);
+      toast.success(`Welcome back ${firstName} :)`);
       navigate("/");
     } catch (err: any) {
-      notify.error(err);
+      console.log(err);
     }
   };
 
@@ -30,7 +30,7 @@ export default function Login(): JSX.Element {
           <h1 className="title-font font-bold text-5xl lg:text-7xl text-blue-600 text-center mb-4">
             friendify
           </h1>
-          <p className="title-font font-bold text-2xl lg:text-3xl text-zinc-600 text-center mb-4">
+          <p className="title-font font-bold text-2xl lg:text-3xl text-zinc-600 text-center p-6 mb-4">
             Friendify helps you connect and share with the people in your life.
           </p>
         </div>

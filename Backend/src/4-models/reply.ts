@@ -5,6 +5,7 @@ export interface IReply extends Document {
   text: string;
   author: mongoose.Types.ObjectId;
   commentId: mongoose.Types.ObjectId;
+  postId: mongoose.Types.ObjectId;
   createdAt: Date;
   likes: mongoose.Types.ObjectId[];
   imageName?: string;
@@ -23,6 +24,10 @@ export const ReplySchema = new Schema<IReply>(
     commentId: {
       type: Schema.Types.ObjectId,
       required: [true, "Comment id is missing."],
+    },
+    postId: {
+      type: Schema.Types.ObjectId,
+      required: [true, "Post id is missing."],
     },
     createdAt: {
       type: Date,
